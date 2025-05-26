@@ -1,0 +1,30 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "docker-stack.yaml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: create env file
+        run: |
+          echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> ./envfile
+
+      - name: Docker Stack Deploy
+        uses: cssnr/stack-deploy-action@v1
+        with:
+          name: vita-track
+          file: docker-stack.yaml
+          host: ${{ secrets.VPS_IP }}
+          user: deploy
+          ssh_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          env_file: ./envfile
