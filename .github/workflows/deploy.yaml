@@ -22,7 +22,7 @@ jobs:
       - name: Docker Stack Deploy
         uses: cssnr/stack-deploy-action@v1
         with:
-          name: vita-track
+          name: perry-infra
           file: docker-stack.yaml
           host: ${{ secrets.VPS_IP }}
           user: deploy
