@@ -2,9 +2,13 @@ version: "3.9"
 
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.6.13
+    environment:
+      - DOCKER_API_VERSION=1.41
+      - ACME_EMAIL=${ACME_EMAIL}
     command:
       - "--providers.docker"
+      - "--providers.docker.swarmmode=true" # Added for Swarm
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
