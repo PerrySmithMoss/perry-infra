@@ -24,7 +24,6 @@ services:
       - "80:80"
       - "443:443"
     deploy:
-      mode: global
       placement:
         constraints:
           - node.role == manager
