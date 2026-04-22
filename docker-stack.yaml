@@ -10,6 +10,7 @@ services:
       - "--providers.swarm=true" 
       - "--providers.swarm.exposedByDefault=false"
       - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.network=portfolio_network" 
 
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
@@ -23,6 +24,13 @@ services:
       - "80:80"
       - "443:443"
     deploy:
+      mode: global 
+      placement:
+        constraints:
+          - node.role == manager
+        labels:
+          - traefik.enable=true
+          - traefik.http.services.dashboard.loadbalancer.server.port=8080
       restart_policy:
         condition: on-failure
         delay: 5s
