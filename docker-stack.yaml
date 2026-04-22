@@ -24,13 +24,10 @@ services:
       - "80:80"
       - "443:443"
     deploy:
-      mode: global 
+      mode: global
       placement:
         constraints:
           - node.role == manager
-        labels:
-          - traefik.enable=true
-          - traefik.http.services.dashboard.loadbalancer.server.port=8080
       restart_policy:
         condition: on-failure
         delay: 5s
