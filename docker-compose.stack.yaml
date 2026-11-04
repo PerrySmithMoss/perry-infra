@@ -72,6 +72,10 @@ services:
         condition: any
 
   postgres:
+    # Existing data volume belongs to UID 999; bypass the root/gosu entrypoint path.
+    user: "999:999"
+    read_only: true
+    cap_drop: [ALL]
     logging:
       driver: json-file
       options: {max-size: "10m", max-file: "3"}
@@ -97,6 +101,8 @@ services:
       timeout: 5s
       retries: 5
     deploy:
+      resources:
+        limits: {memory: 640M, cpus: "1.0", pids: 256}
       update_config:
         order: stop-first
         failure_action: rollback
@@ -111,6 +117,12 @@ services:
       - bulkbets_database
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - type: tmpfs
+        target: /var/run/postgresql
+        tmpfs: {size: 16777216, mode: 01777}
+      - type: tmpfs
+        target: /tmp
+        tmpfs: {size: 67108864, mode: 01777}
 
 volumes:
   postgres_data:
