@@ -1,100 +1,39 @@
-# 🛠 perry-infra
+# Shared portfolio infrastructure
 
-Docker-based infrastructure stack for deploying and managing shared services across all my personal projects on a single VPS.
+This repository manages Traefik, its restricted Docker API proxy, and PostgreSQL
+for the existing single-node Docker Swarm. The live stack name is `perry-infra`.
 
-## 🚀 What's Included
+Deploy with `ACME_EMAIL` set and the external networks/secrets already present:
 
-This stack provides the core infrastructure needed to support multiple backend apps:
-
-- **Traefik** – reverse proxy with automatic HTTPS (Let's Encrypt)
-- **Postgres** – shared database with one DB per app
-- **Redis** – shared cache using different DB indexes per app
-- **Docker Swarm** – orchestration layer for app stack deployments
-- **Overlay Network** – shared across all app stacks for communication
-
-## 🐳 Deployment
-
-### 1. Set Environment Variables
-
-Create a `.env` file (not committed) with required values:
-
-<details>
-<summary><code>.env</code> example</summary>
-
-```env
-ACME_EMAIL=you@example.com
-POSTGRES_PASSWORD=your_secure_postgres_password
+```sh
+docker stack config -c docker-stack.yaml > /tmp/perry-infra.yaml
+docker stack deploy --resolve-image always -c /tmp/perry-infra.yaml perry-infra
 ```
 
-</details>
+GitHub Actions requires `ACME_EMAIL`, `VPS_IP`, `DEPLOY_SSH_PRIVATE_KEY`, and verified
+`VPS_KNOWN_HOSTS` secrets. It uses strict SSH host verification and pinned Actions.
+The deploy key still has Docker-manager authority; replacing this with a host-owned
+restricted deployment service requires administrator access and remains outstanding.
 
-## 2. Deploy Stack
+Traefik accesses Docker through a private, internal `docker_control` overlay. The
+socket proxy permits service/task/network/node discovery; container access,
+secrets/configs, and writes are denied. No Docker API port is published.
 
-From the VPS (or remotely over SSH if scripted), deploy the shared services using Docker Swarm:
+Existing applications retain `portfolio_network`. BulkBets instead uses external,
+non-attachable encrypted overlays `bulkbets_ingress` (10.42.10.0/24; Traefik/API) and
+`bulkbets_database` (10.42.11.0/24; PostgreSQL/API/migration jobs). Do not attach other
+applications to these networks or publish database ports.
 
-```bash
-docker stack deploy -c docker-stack.yaml infra
-```
+PostgreSQL 17.11 uses existing `postgres_user`/`postgres_password` secrets and the
+existing `postgres_data` volume. It also requires `bulkbets_db_cert` and
+`bulkbets_db_key` (key UID/GID 999, mode 0400). BulkBets clients use `bulkbets_db_ca`
+and TLS `verify-full`. HBA rules require TLS for BulkBets roles and reject their
+connections to other databases; legacy application rules are retained.
 
-This deploys the stack under the name infra.
+Docker configs are immutable. When changing `postgres/pg_hba.conf` after deployment,
+version the config name in the stack before deploying. TLS secret rotations likewise
+need versioned names. The current server certificate expires February 6, 2029.
 
-## 🌐 Network
-
-All application stacks should connect to a shared overlay network to communicate with infrastructure services:
-
-<details> <summary><code>docker-stack.yaml</code> network section example</summary>
-
-```yaml
-networks:
-  shared_net:
-    external: true
-```
-
-</details>
-
-Ensure each app stack includes this to enable inter-container communication with Postgres, Redis, and Traefik.
-
-## 🗃 Database & Cache Strategy
-
-- Postgres: Each app uses it's own unique Postgres database (e.g., `db_1`, `db_@`).
-- Redis: Each app uses a unique Redis database index (0–15) to isolate keyspaces.
-
-> ⚠️ You must manually create new Postgres databases before deploying apps.
-
-### Create a Postgres Database
-
-```bash
-docker exec -it $(docker ps -qf name=postgres) psql -U postgres
-```
-
-Then inside the psql shell:
-
-```sql
-CREATE DATABASE db_name;
-```
-
-## 🔐 Secrets
-
-Sensitive credentials like database URLs, API keys, and JWT secrets are handled via:
-
-- GitHub Actions secrets
-- App-specific `.env.production` files (not committed)
-- Docker Swarm secrets
-
-## 🧩 Related Repositories
-
-This repo supports multiple backend projects, each deployed from their own GitHub repositories:
-
-- BulkBets
-- VitaTrack
-- im-listening
-- chinwag
-- More to come...
-
-Each app stack connects to the shared services managed by `perry-infra`.
-
-## 📌 Notes
-
-- Only need to deploy this stack once, unless you update or add infrastructure services.
-- App stacks are deployed independently using their own `docker-stack.yaml` files.
-- All stacks reference the same shared overlay network `portfolio_network`.
+Changes to this shared PostgreSQL service affect all portfolio apps. Use stop-first
+updates, a temporary verified recovery copy, and check application availability.
+Scheduled backups were explicitly declined by the owner for this portfolio.
