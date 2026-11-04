@@ -2,7 +2,7 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
-    paths: [".github/**", "docker-stack.yaml", "postgres/**"]
+    paths: [".github/**", "docker-compose.stack.yaml", "postgres/**"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,7 +45,7 @@ jobs:
           CONFIG
       - name: Validate and deploy infrastructure
         run: |
-          docker stack config -c docker-stack.yaml > "$RUNNER_TEMP/infra.yaml"
+          docker stack config -c docker-compose.stack.yaml > "$RUNNER_TEMP/infra.yaml"
           docker stack deploy --resolve-image always --detach=false -c "$RUNNER_TEMP/infra.yaml" perry-infra
           curl --fail --retry 12 --retry-delay 5 --retry-all-errors https://bulkbets-api.perrysmithmoss.com/api/v1/health
       - name: Remove runner credentials

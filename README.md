@@ -6,7 +6,7 @@ for the existing single-node Docker Swarm. The live stack name is `perry-infra`.
 Deploy with `ACME_EMAIL` set and the external networks/secrets already present:
 
 ```sh
-docker stack config -c docker-stack.yaml > /tmp/perry-infra.yaml
+docker stack config -c docker-compose.stack.yaml > /tmp/perry-infra.yaml
 docker stack deploy --resolve-image always -c /tmp/perry-infra.yaml perry-infra
 ```
 
