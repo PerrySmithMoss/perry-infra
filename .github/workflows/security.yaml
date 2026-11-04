@@ -1,0 +1,36 @@
+name: Infrastructure image security
+on:
+  schedule:
+    - cron: '17 7 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths: [docker-compose.stack.yaml, docker-proxy/**]
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Scan every runtime image
+        run: |
+          set -eu
+          mkdir reports
+          scanner=aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+          for image in $(awk '/    image:/{print $2}' docker-compose.stack.yaml); do
+            name=${image%%:*}
+            docker run --rm -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --format json --output "/reports/$name.json" "$image"
+            case "$name" in
+              postgres)
+                # Full report retained above. Debian-unfixed libraries and the
+                # non-network gosu helper are tracked in the remediation record.
+                docker run --rm -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --pkg-types os --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "$image" ;;
+              *) docker run --rm -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image" ;;
+            esac
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: infrastructure-vulnerabilities
+          path: reports

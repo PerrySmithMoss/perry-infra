@@ -1,6 +1,6 @@
 # Shared portfolio infrastructure
 
-This repository manages Traefik, its restricted Docker API proxy, and PostgreSQL
+This repository manages Traefik, its restricted HAProxy Docker API proxy, and PostgreSQL
 for the existing single-node Docker Swarm. The live stack name is `perry-infra`.
 
 Deploy with `ACME_EMAIL` set and the external networks/secrets already present:

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   traefik:
-    image: traefik:v3.6.13@sha256:34d5089d0b414945342848518b383f11f5b3a645504ed87b77ffeb9d683d0e48
+    image: traefik:v3.7.17@sha256:68ae5fe5b64ca166704b746a9e8afcd385e36b3f569a5691401bf652d57b3748
     environment:
       - DOCKER_API_VERSION=1.41
       - ACME_EMAIL=${ACME_EMAIL}
@@ -50,17 +50,13 @@ services:
       - letsencrypt:/letsencrypt
 
   docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
-    environment:
-      SERVICES: "1"
-      TASKS: "1"
-      NETWORKS: "1"
-      NODES: "1"
-      POST: "0"
-      CONTAINERS: "0"
-      SECRETS: "0"
-      CONFIGS: "0"
-      EVENTS: "0"
+    image: haproxy:3.4.7-alpine@sha256:2caaf8b1a1ef67f3f1ea9b721f2821675d3ba4500fb518e23884fecb93e8dbaa
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    configs:
+      - source: docker_proxy
+        target: /usr/local/etc/haproxy/haproxy.cfg
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks: [docker_control]
@@ -133,6 +129,8 @@ networks:
     external: true
 
 configs:
+  docker_proxy:
+    file: ./docker-proxy/haproxy.cfg
   postgres_hba:
     file: ./postgres/pg_hba.conf
 
