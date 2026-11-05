@@ -119,7 +119,7 @@ func ensureSpec(s service, p policy, expected string) (string, error) {
 	return digest, nil
 }
 
-func release(run dockerRun, p policy, expected string, args []string) error {
+func release(run dockerRun, p policy, expected string, args []string, attempts int, interval time.Duration) error {
 	if !validRelease(args) {
 		return errors.New("invalid release arguments")
 	}
@@ -146,25 +146,48 @@ func release(run dockerRun, p policy, expected string, args []string) error {
 	if err != nil {
 		return err
 	}
-	if current != args[0] {
+	changed := current != args[0]
+	if changed {
 		if _, err := run(4*time.Minute, "service", "update", "--detach=false", "--no-resolve-image", "--image", image, s.ID); err != nil {
 			return err
 		}
 	}
-	s, err = inspect(run, p.service)
-	if err != nil {
-		return err
+	// The CLI can return once tasks are stable, just before the manager
+	// publishes the final UpdateStatus. Require both signals, with a bound.
+	for i := 0; i < attempts; i++ {
+		if i > 0 {
+			time.Sleep(interval)
+		}
+		s, err = inspect(run, p.service)
+		if err != nil {
+			return err
+		}
+		current, err = ensureSpec(s, p, expected)
+		if err != nil {
+			return err
+		}
+		if current != args[0] {
+			return errors.New("Swarm service is no longer pinned to the requested digest")
+		}
+		switch state := s.UpdateStatus.State; {
+		case state == "updating":
+			continue
+		case state == "", state == "completed", !changed && state == "rollback_completed":
+			// A previously completed rollback to this digest is an idempotent
+			// release only if the requested task is still running below.
+		default:
+			return errors.New("Swarm paused or rolled back the release")
+		}
+		rows, err := run(15*time.Second, "service", "ps", "--no-trunc", "--filter", "desired-state=running", "--format", "{{.Image}}|{{.CurrentState}}", s.ID)
+		if err != nil {
+			return err
+		}
+		prefix, status, found := strings.Cut(strings.TrimSuffix(string(rows), "\n"), "|")
+		if found && !strings.Contains(status, "\n") && strings.HasSuffix(prefix, "@"+args[0]) && strings.HasPrefix(status, "Running ") {
+			return nil
+		}
 	}
-	current, err = ensureSpec(s, p, expected)
-	if err != nil || current != args[0] || (s.UpdateStatus.State != "" && s.UpdateStatus.State != "completed") {
-		return errors.New("Swarm did not converge on the requested release")
-	}
-	rows, err := run(15*time.Second, "service", "ps", "--no-trunc", "--filter", "desired-state=running", "--format", "{{.Image}}|{{.CurrentState}}", s.ID)
-	prefix, status, found := strings.Cut(strings.TrimSuffix(string(rows), "\n"), "|")
-	if err != nil || !found || strings.Contains(status, "\n") || !strings.HasSuffix(prefix, "@"+args[0]) || !strings.HasPrefix(status, "Running ") {
-		return errors.New("requested digest does not have exactly one running task")
-	}
-	return nil
+	return errors.New("timed out waiting for the requested digest to converge on exactly one running task")
 }
 
 func withLock(name string, action func() error) error {
@@ -226,7 +249,7 @@ func run(args []string) error {
 			if err != nil {
 				return errors.New("no administrator-reviewed release policy")
 			}
-			return release(docker, p, strings.TrimSuffix(string(expected), "\n"), args[2:])
+			return release(docker, p, strings.TrimSuffix(string(expected), "\n"), args[2:], 30, time.Second)
 		default:
 			return errors.New("command rejected")
 		}
