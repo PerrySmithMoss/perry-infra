@@ -23,3 +23,10 @@ container a host mount, broaden networking or expose infrastructure secrets.
 The production workflow runs the image/proxy/certificate checks before deployment
 and uses a protected GitHub environment. The legacy deployment path is present
 only for migration and fails closed once its old repository key is removed.
+
+## Portfolio application releases
+
+See [the restricted portfolio release runbook](portfolio/README.md) for the
+Chinwag, Fleet and VitaTrack image-only broker, administrator installation,
+protected workflow setup, rollback checks and shared credential retirement.
+This is a separate command and does not replace the infrastructure broker.

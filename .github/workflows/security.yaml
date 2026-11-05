@@ -17,6 +17,15 @@ jobs:
         run: sh docker-proxy/test.sh
       - name: Check restricted deployment boundary
         run: python3 -B -m unittest discover -s deploy -p 'test_*.py'
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: deploy/portfolio/go.mod
+          cache: false
+      - name: Test portfolio release policy
+        run: |
+          go -C deploy/portfolio test -race ./...
+          go -C deploy/portfolio vet ./...
+          sh -n deploy/portfolio/install.sh
       - name: Warn before database certificates expire
         run: sh postgres/check-certificates.sh
       - name: Scan every runtime image
@@ -26,7 +35,7 @@ jobs:
           scanner=aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
           for image in $(awk '/    image:/{print $2}' docker-compose.stack.yaml); do
             name=${image%%:*}
-            docker run --rm -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --format json --output "/reports/$name.json" "$image"
+            docker run --rm -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --format json --output "/reports/$name.json" "$image"
             case "$name" in
               postgres)
                 # Full report retained above. Debian-unfixed libraries and the
@@ -35,6 +44,16 @@ jobs:
               *) docker run --rm -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image" ;;
             esac
           done
+      - name: Test and scan the PostgreSQL candidate without gosu
+        run: |
+          set -eu
+          base=$(awk '$1 == "image:" && $2 ~ /^postgres:/ {print $2}' docker-compose.stack.yaml)
+          docker build --build-arg POSTGRES_BASE="$base" -t postgres-without-gosu -f postgres/Dockerfile postgres
+          sh postgres/test-no-gosu.sh "$base" postgres-without-gosu
+          scanner=aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+          docker save -o "$RUNNER_TEMP/postgres-candidate.tar" postgres-without-gosu
+          docker run --rm -v "$RUNNER_TEMP/postgres-candidate.tar:/candidate.tar:ro" -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --input /candidate.tar --scanners vuln --format json --output /reports/postgres-without-gosu.json
+          docker run --rm -v "$RUNNER_TEMP/postgres-candidate.tar:/candidate.tar:ro" -v trivy-cache:/root/.cache/trivy "$scanner" image --input /candidate.tar --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
