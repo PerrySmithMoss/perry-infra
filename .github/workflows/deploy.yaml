@@ -2,7 +2,7 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
-    paths: [".github/**", "docker-compose.stack.yaml", "postgres/**", "docker-proxy/**"]
+    paths: [".github/**", "docker-compose.stack.yaml", "postgres/**", "docker-proxy/**", "deploy/**"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,7 +10,11 @@ concurrency:
   group: perry-infra-production
   cancel-in-progress: false
 jobs:
+  security:
+    uses: ./.github/workflows/security.yaml
   deploy:
+    needs: [security]
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -25,7 +29,8 @@ jobs:
       - name: Configure verified SSH transport
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
-          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ vars.RESTRICTED_DEPLOY_ENABLED == 'true' && secrets.INFRA_RELEASE_KEY || secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          VPS_SSH_USER: ${{ vars.RESTRICTED_DEPLOY_ENABLED == 'true' && 'infra-release' || 'deploy' }}
           VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           set -eu
@@ -40,7 +45,7 @@ jobs:
           cat > "$HOME/.ssh/config" <<CONFIG
           Host infra-vps
             HostName $VPS_IP
-            User deploy
+            User $VPS_SSH_USER
             IdentityFile $RUNNER_TEMP/infra-key
             UserKnownHostsFile $RUNNER_TEMP/infra-hosts
             IdentitiesOnly yes
@@ -48,10 +53,14 @@ jobs:
             StrictHostKeyChecking yes
           CONFIG
       - name: Validate and deploy infrastructure
+        if: vars.RESTRICTED_DEPLOY_ENABLED != 'true'
         run: |
           docker stack config -c docker-compose.stack.yaml > "$RUNNER_TEMP/infra.yaml"
           docker stack deploy --resolve-image always --detach=false -c "$RUNNER_TEMP/infra.yaml" perry-infra
           curl --fail --retry 12 --retry-delay 5 --retry-all-errors https://bulkbets-api.perrysmithmoss.com/api/v1/health
+      - name: Deploy administrator-reviewed infrastructure snapshot
+        if: vars.RESTRICTED_DEPLOY_ENABLED == 'true'
+        run: ssh infra-vps "infrastructure $(python3 -B deploy/fingerprint.py)"
       - name: Remove runner credentials
         if: always()
         run: rm -f "$RUNNER_TEMP/infra-key" "$RUNNER_TEMP/infra-hosts" "$HOME/.ssh/config"
