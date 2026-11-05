@@ -24,8 +24,14 @@ non-attachable encrypted overlays `bulkbets_ingress` (10.42.10.0/24; Traefik/API
 `bulkbets_database` (10.42.11.0/24; PostgreSQL/API/migration jobs). Do not attach other
 applications to these networks or publish database ports.
 
-PostgreSQL 17.11 uses existing `postgres_user`/`postgres_password` secrets and the
-existing `postgres_data` volume. It also requires `bulkbets_db_cert` and
+PostgreSQL 17.11 uses `postgres_user` and the versioned
+`postgres_password_v2` secret, mounted at `/run/secrets/postgres_password`,
+with the existing `postgres_data` volume. Rotating the mounted secret does
+not change a password on an initialized database. Rotate the role in
+PostgreSQL and verify both the new and retired credentials over the network.
+Chinwag and VitaTrack use separate PostgreSQL roles that own their Prisma
+tables and have access to their respective application databases. The
+one-time ownership change is in `postgres/legacy-app-role.sql`. It also requires `bulkbets_db_cert` and
 `bulkbets_db_key` (key UID/GID 999, mode 0400). BulkBets clients use `bulkbets_db_ca`
 and TLS `verify-full`. HBA rules require TLS for BulkBets roles and reject their
 connections to other databases; legacy application rules are retained.
