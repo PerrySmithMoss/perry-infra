@@ -17,49 +17,35 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
-      DOCKER_HOST: ssh://infra-vps
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # actions/checkout@v6
       - name: Check Docker API restrictions
-        env:
-          DOCKER_HOST: ""
         run: sh docker-proxy/test.sh
       - name: Configure verified SSH transport
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
-          DEPLOY_SSH_PRIVATE_KEY: ${{ vars.RESTRICTED_DEPLOY_ENABLED == 'true' && secrets.INFRA_RELEASE_KEY || secrets.DEPLOY_SSH_PRIVATE_KEY }}
-          VPS_SSH_USER: ${{ vars.RESTRICTED_DEPLOY_ENABLED == 'true' && 'infra-release' || 'deploy' }}
+          INFRA_RELEASE_KEY: ${{ secrets.INFRA_RELEASE_KEY }}
           VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           set -eu
           : "${VPS_IP:?Missing VPS_IP}"
-          : "${DEPLOY_SSH_PRIVATE_KEY:?Missing deployment key}"
+          : "${INFRA_RELEASE_KEY:?Missing deployment key}"
           : "${VPS_KNOWN_HOSTS:?Missing verified VPS host keys}"
-          : "${ACME_EMAIL:?Missing ACME_EMAIL}"
           install -d -m 700 "$HOME/.ssh"
           umask 077
-          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/infra-key"
+          printf '%s\n' "$INFRA_RELEASE_KEY" > "$RUNNER_TEMP/infra-key"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$RUNNER_TEMP/infra-hosts"
           cat > "$HOME/.ssh/config" <<CONFIG
           Host infra-vps
             HostName $VPS_IP
-            User $VPS_SSH_USER
+            User infra-release
             IdentityFile $RUNNER_TEMP/infra-key
             UserKnownHostsFile $RUNNER_TEMP/infra-hosts
             IdentitiesOnly yes
             BatchMode yes
             StrictHostKeyChecking yes
           CONFIG
-      - name: Validate and deploy infrastructure
-        if: vars.RESTRICTED_DEPLOY_ENABLED != 'true'
-        run: |
-          docker stack config -c docker-compose.stack.yaml > "$RUNNER_TEMP/infra.yaml"
-          docker stack deploy --resolve-image always --detach=false -c "$RUNNER_TEMP/infra.yaml" perry-infra
-          curl --fail --retry 12 --retry-delay 5 --retry-all-errors https://bulkbets-api.perrysmithmoss.com/api/v1/health
       - name: Deploy administrator-reviewed infrastructure snapshot
-        if: vars.RESTRICTED_DEPLOY_ENABLED == 'true'
         run: |
           # Compute the fingerprint locally; the broker independently verifies its snapshot.
           # shellcheck disable=SC2029

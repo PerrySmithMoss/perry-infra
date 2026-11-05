@@ -17,6 +17,15 @@ jobs:
         run: sh docker-proxy/test.sh
       - name: Check restricted deployment boundary
         run: python3 -B -m unittest discover -s deploy -p 'test_*.py'
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: deploy/portfolio/go.mod
+          cache: false
+      - name: Test portfolio release policy
+        run: |
+          go -C deploy/portfolio test -race ./...
+          go -C deploy/portfolio vet ./...
+          sh -n deploy/portfolio/install.sh
       - name: Check scoped application roles on disposable PostgreSQL
         run: |
           set -eu
