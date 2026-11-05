@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -20,8 +22,9 @@ import (
 )
 
 const (
-	installed = "/usr/local/libexec/portfolio-release"
-	stateDir  = "/opt/portfolio-release"
+	installed    = "/usr/local/libexec/portfolio-release"
+	stateDir     = "/opt/portfolio-release"
+	dockerSocket = "/var/run/docker.sock"
 )
 
 type policy struct {
@@ -63,7 +66,7 @@ var cleanEnv = []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL=C", "HOME=
 func docker(timeout time.Duration, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "/usr/bin/docker", append([]string{"--host", "unix:///var/run/docker.sock"}, args...)...)
+	cmd := exec.CommandContext(ctx, "/usr/bin/docker", append([]string{"--host", "unix://" + dockerSocket}, args...)...)
 	cmd.Env, cmd.Dir, cmd.WaitDelay = cleanEnv, "/", time.Second
 	out, err := cmd.Output() // Never forward Docker diagnostics or service configuration to SSH.
 	if err != nil {
@@ -74,6 +77,7 @@ func docker(timeout time.Duration, args ...string) ([]byte, error) {
 
 type service struct {
 	ID           string
+	Version      struct{ Index uint64 }
 	Spec         map[string]any
 	UpdateStatus struct{ State string }
 }
@@ -86,7 +90,7 @@ func inspect(run dockerRun, name string) (service, error) {
 	}
 	decoder := json.NewDecoder(bytes.NewReader(out))
 	decoder.UseNumber()
-	if decoder.Decode(&result) != nil || len(result) != 1 || result[0].Spec["Name"] != name || !serviceIDRE.MatchString(result[0].ID) {
+	if decoder.Decode(&result) != nil || len(result) != 1 || result[0].Spec["Name"] != name || !serviceIDRE.MatchString(result[0].ID) || result[0].Version.Index == 0 {
 		return service{}, errors.New("unexpected service")
 	}
 	return result[0], nil
@@ -119,7 +123,41 @@ func ensureSpec(s service, p policy, expected string) (string, error) {
 	return digest, nil
 }
 
-func release(run dockerRun, p policy, expected string, args []string, attempts int, interval time.Duration) error {
+var engine = &http.Transport{
+	DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "unix", dockerSocket)
+	},
+}
+
+func updateImage(engine http.RoundTripper, s service, image string) error {
+	// Use the exact version and spec that passed the policy check. A Docker CLI
+	// service update would re-read the spec and could inherit concurrent changes.
+	container := s.Spec["TaskTemplate"].(map[string]any)["ContainerSpec"].(map[string]any)
+	container["Image"] = image
+	body, err := json.Marshal(s.Spec)
+	if err != nil {
+		return errors.New("cannot encode service update")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	endpoint := fmt.Sprintf("http://docker/services/%s/update?version=%d", s.ID, s.Version.Index)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return errors.New("cannot prepare service update")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := engine.RoundTrip(req)
+	if err != nil {
+		return errors.New("Docker service update failed")
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return errors.New("Docker rejected the service update; verify the service version and policy before retrying")
+	}
+	return nil
+}
+
+func release(run dockerRun, engine http.RoundTripper, p policy, expected string, args []string, attempts int, interval time.Duration) error {
 	if !validRelease(args) {
 		return errors.New("invalid release arguments")
 	}
@@ -148,13 +186,14 @@ func release(run dockerRun, p policy, expected string, args []string, attempts i
 	}
 	changed := current != args[0]
 	if changed {
-		if _, err := run(4*time.Minute, "service", "update", "--detach=false", "--no-resolve-image", "--image", image, s.ID); err != nil {
+		if err := updateImage(engine, s, image); err != nil {
 			return err
 		}
 	}
-	// The CLI can return once tasks are stable, just before the manager
-	// publishes the final UpdateStatus. Require both signals, with a bound.
-	for i := 0; i < attempts; i++ {
+	// A successful update request only queues the deployment. Wait for both the
+	// manager's final UpdateStatus and the running task, with a bound.
+	deadline := time.Now().Add(4*time.Minute + 30*time.Second)
+	for i := 0; i < attempts && time.Now().Before(deadline); i++ {
 		if i > 0 {
 			time.Sleep(interval)
 		}
@@ -170,9 +209,9 @@ func release(run dockerRun, p policy, expected string, args []string, attempts i
 			return errors.New("Swarm service is no longer pinned to the requested digest")
 		}
 		switch state := s.UpdateStatus.State; {
-		case state == "updating":
+		case state == "updating", changed && state == "":
 			continue
-		case state == "", state == "completed", !changed && state == "rollback_completed":
+		case state == "completed", !changed && (state == "" || state == "rollback_completed"):
 			// A previously completed rollback to this digest is an idempotent
 			// release only if the requested task is still running below.
 		default:
@@ -249,7 +288,7 @@ func run(args []string) error {
 			if err != nil {
 				return errors.New("no administrator-reviewed release policy")
 			}
-			return release(docker, p, strings.TrimSuffix(string(expected), "\n"), args[2:], 30, time.Second)
+			return release(docker, engine, p, strings.TrimSuffix(string(expected), "\n"), args[2:], 270, time.Second)
 		default:
 			return errors.New("command rejected")
 		}

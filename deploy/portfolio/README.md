@@ -26,7 +26,8 @@ and recovery procedures.
 The release account can only request `release sha256:<64 lower-case hex> <40-character commit SHA>`.
 The broker pins the repository name, verifies the image's revision label, and
 checks the reviewed service ID and configuration before and after updating the
-image. The revision label is a consistency check; control of the app's package
+image. Swarm rejects the update if the verified service version has changed.
+The revision label is a consistency check. Control of the app's package
 still allows release of arbitrary application code. That code can use its own
 mounted secrets and reach peers on the existing shared overlay. Network isolation
 between the legacy applications is a separate hardening step.

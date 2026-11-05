@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -32,12 +34,21 @@ func TestSSHBoundary(t *testing.T) {
 	}
 }
 
+type engineStub func(*http.Request) (*http.Response, error)
+
+func (stub engineStub) RoundTrip(req *http.Request) (*http.Response, error) {
+	return stub(req)
+}
+
 func TestRelease(t *testing.T) {
 	p := apps["chinwag"]
 	const id = "abcd123456789012345678901"
-	for _, mode := range []string{"success", "delayed-status", "delayed-task", "no-op", "no-op-after-rollback", "drift", "service-replaced", "drift-after-pull", "wrong-revision", "pull-failed", "update-timeout", "rolled-back", "stale-task", "two-tasks"} {
+	for _, mode := range []string{"success", "delayed-status", "delayed-task", "no-op", "no-op-after-rollback", "drift", "service-replaced", "drift-after-pull", "missing-version", "version-conflict", "wrong-revision", "pull-failed", "update-timeout", "rolled-back", "stale-task", "two-tasks"} {
 		t.Run(mode, func(t *testing.T) {
 			s := service{ID: id}
+			if mode != "missing-version" {
+				s.Version.Index = 9007199254740993
+			}
 			container := map[string]any{"Image": p.repository + ":known@" + oldDigest, "Secrets": []string{"chinwag_database_url"}}
 			s.Spec = map[string]any{"Name": p.service, "TaskTemplate": map[string]any{"ContainerSpec": container, "Networks": []string{"reviewed"}}}
 			expected, _, err := s.fingerprint(p)
@@ -70,9 +81,12 @@ func TestRelease(t *testing.T) {
 					}
 					if mutated && mode == "delayed-status" {
 						postUpdateInspects++
-						if postUpdateInspects == 1 {
+						switch postUpdateInspects {
+						case 1:
+							s.UpdateStatus.State = ""
+						case 2:
 							s.UpdateStatus.State = "updating"
-						} else {
+						default:
 							s.UpdateStatus.State = "completed"
 						}
 					}
@@ -92,20 +106,6 @@ func TestRelease(t *testing.T) {
 						return []byte("other\n"), nil
 					}
 					return []byte(revision + "\n"), nil
-				case "service update":
-					if !slices.Equal(args[2:], []string{"--detach=false", "--no-resolve-image", "--image", image, id}) {
-						t.Fatalf("unexpected Swarm mutation: %v", args)
-					}
-					mutated = true
-					if mode == "update-timeout" {
-						return nil, errors.New("timeout")
-					}
-					if mode == "rolled-back" {
-						s.UpdateStatus.State = "rollback_completed"
-					} else {
-						container["Image"] = image
-						s.UpdateStatus.State = "completed"
-					}
 				case "service ps":
 					taskChecks++
 					switch mode {
@@ -124,11 +124,39 @@ func TestRelease(t *testing.T) {
 				}
 				return nil, nil
 			}
-			err = release(fake, p, expected, []string{digest, revision}, 3, 0)
+			engine := engineStub(func(req *http.Request) (*http.Response, error) {
+				mutated = true
+				if req.Method != http.MethodPost || req.URL.RequestURI() != "/services/"+id+"/update?version=9007199254740993" {
+					t.Fatalf("unexpected Swarm update: %s %s", req.Method, req.URL)
+				}
+				submitted := service{ID: id}
+				decoder := json.NewDecoder(req.Body)
+				decoder.UseNumber()
+				if err := decoder.Decode(&submitted.Spec); err != nil {
+					t.Fatal(err)
+				}
+				if fingerprint, submittedDigest, err := submitted.fingerprint(p); err != nil || fingerprint != expected || submittedDigest != digest {
+					t.Fatal("update did not preserve the reviewed spec with the requested image")
+				}
+				if mode == "update-timeout" {
+					return nil, errors.New("timeout")
+				}
+				response := httptest.NewRecorder()
+				if mode == "version-conflict" {
+					response.WriteHeader(http.StatusConflict)
+				} else if mode == "rolled-back" {
+					s.UpdateStatus.State = "rollback_completed"
+				} else {
+					container["Image"] = image
+					s.UpdateStatus.State = "completed"
+				}
+				return response.Result(), nil
+			})
+			err = release(fake, engine, p, expected, []string{digest, revision}, 3, 0)
 			if (err == nil) != slices.Contains([]string{"success", "delayed-status", "delayed-task", "no-op", "no-op-after-rollback"}, mode) {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if mutated != slices.Contains([]string{"success", "delayed-status", "delayed-task", "update-timeout", "rolled-back", "stale-task", "two-tasks"}, mode) {
+			if mutated != slices.Contains([]string{"success", "delayed-status", "delayed-task", "version-conflict", "update-timeout", "rolled-back", "stale-task", "two-tasks"}, mode) {
 				t.Fatalf("unexpected mutation status: %v", mutated)
 			}
 		})
