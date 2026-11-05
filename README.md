@@ -3,17 +3,18 @@
 This repository manages Traefik, its restricted HAProxy Docker API proxy, and PostgreSQL
 for the existing single-node Docker Swarm. The live stack name is `perry-infra`.
 
-Deploy with `ACME_EMAIL` set and the external networks/secrets already present:
+For owner-controlled recovery only, with `ACME_EMAIL` set and external networks
+and secrets already present:
 
 ```sh
 docker stack config -c docker-compose.stack.yaml > /tmp/perry-infra.yaml
 docker stack deploy --resolve-image always -c /tmp/perry-infra.yaml perry-infra
 ```
 
-GitHub Actions requires `ACME_EMAIL`, `VPS_IP`, `DEPLOY_SSH_PRIVATE_KEY`, and verified
-`VPS_KNOWN_HOSTS` secrets. It uses strict SSH host verification and pinned Actions.
-The deploy key still has Docker-manager authority; replacing this with a host-owned
-restricted deployment service requires administrator access and remains outstanding.
+GitHub Actions deploys administrator-installed snapshots through the dedicated
+`infra-release` SSH account. It requires `VPS_IP`, verified `VPS_KNOWN_HOSTS`
+and the `production` environment secret `INFRA_RELEASE_KEY`. See the
+[installation and deployment guide](deploy/README.md).
 
 Traefik accesses Docker through a private, internal `docker_control` overlay. The
 socket proxy permits service/task/network/node discovery; container access,
