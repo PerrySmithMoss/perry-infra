@@ -60,7 +60,10 @@ jobs:
           curl --fail --retry 12 --retry-delay 5 --retry-all-errors https://bulkbets-api.perrysmithmoss.com/api/v1/health
       - name: Deploy administrator-reviewed infrastructure snapshot
         if: vars.RESTRICTED_DEPLOY_ENABLED == 'true'
-        run: ssh infra-vps "infrastructure $(python3 -B deploy/fingerprint.py)"
+        run: |
+          # Compute the fingerprint locally; the broker independently verifies its snapshot.
+          # shellcheck disable=SC2029
+          ssh infra-vps "infrastructure $(python3 -B deploy/fingerprint.py)"
       - name: Remove runner credentials
         if: always()
         run: rm -f "$RUNNER_TEMP/infra-key" "$RUNNER_TEMP/infra-hosts" "$HOME/.ssh/config"
