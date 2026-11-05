@@ -62,9 +62,10 @@ legacy account.
    for effective `forcecommand`, `disableforwarding` and `permittty`, and
    `sudo -l -U chinwag-release` for the single restricted command. Confirm the
    account is in no supplementary groups. Stop if any restriction is absent.
-4. In the repository, configure `VPS Production` with the default branch as the
-   only allowed deployment branch and the owner as required reviewer. Add only
-   this app's private key as environment secret `APP_RELEASE_KEY`. Set
+4. Protect the default branch with required PRs and passing checks, including
+   for administrators. Configure `VPS Production` to accept only that branch
+   and run routine releases automatically after a green merge. Add only this
+   app's private key as environment secret `APP_RELEASE_KEY`. Set
    `VPS_HOST` and `VPS_KNOWN_HOSTS` as environment variables. Obtain the pinned
    SSH host key through the existing verified administrator connection.
 5. Before merging the workflow, test the new key against the live account:
@@ -74,8 +75,8 @@ legacy account.
    direct sudo for a different app as the restricted account; it must fail.
    Check the previously recorded digest through the supported SSH command
    (an idempotent verification with no service update).
-6. Merge the new workflow, approve one real release through the protected
-   environment and verify the requested digest, exactly one running task, and
+6. Merge the new workflow after its checks pass. Verify that the automatic
+   release converges on the requested digest, exactly one running task, and
    the application's core paths. Chinwag: log in to a controlled account and
    verify messages; Fleet: verify live vehicle data/stream and the routing UI;
    VitaTrack: log in to a controlled account and verify activity/nutrition reads.
