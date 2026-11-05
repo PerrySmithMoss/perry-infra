@@ -48,13 +48,18 @@ jobs:
           mkdir reports
           scanner=aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
           for image in $(awk '/    image:/{print $2}' docker-compose.stack.yaml); do
-            name=${image%%:*}
+            name=${image##*/}
+            name=${name%%[:@]*}
             docker run --rm -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --format json --output "/reports/$name.json" "$image"
-            case "$name" in
-              postgres)
+            case "$image" in
+              postgres:*)
                 # Full report retained above. Debian-unfixed libraries and the
                 # non-network gosu helper are tracked in the remediation record.
                 docker run --rm -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --pkg-types os --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "$image" ;;
+              ghcr.io/perrysmithmoss/perry-infra-postgres@sha256:*)
+                # The reviewed candidate excludes gosu. Keep the full report
+                # and fail on any fixable high or critical package finding.
+                docker run --rm -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "$image" ;;
               *) docker run --rm -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image" ;;
             esac
           done

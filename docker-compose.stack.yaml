@@ -72,14 +72,14 @@ services:
         condition: any
 
   postgres:
-    # Existing data volume belongs to UID 999; bypass the root/gosu entrypoint path.
+    # Existing data volume belongs to UID 999.
     user: "999:999"
     read_only: true
     cap_drop: [ALL]
     logging:
       driver: json-file
       options: {max-size: "10m", max-file: "3"}
-    image: postgres:17.11-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994
+    image: ghcr.io/perrysmithmoss/perry-infra-postgres@sha256:99a844ae84b960c15e29a8d5e85c1a56b9d451a5d5a7be98e79e923f03d1ec0b
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/run/secrets/bulkbets_db_cert, -c, ssl_key_file=/run/secrets/bulkbets_db_key, -c, hba_file=/etc/postgresql/pg_hba.conf]
     configs:
       - source: postgres_hba
