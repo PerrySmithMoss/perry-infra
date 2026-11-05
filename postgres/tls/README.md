@@ -36,11 +36,13 @@ openssl x509 -in postgres/tls/server.crt -noout -fingerprint -sha256 -dates
 ## PostgreSQL runtime candidate
 
 The [candidate workflow](../../.github/workflows/postgres-candidate.yaml) builds
-and scans `postgres/Dockerfile` from the same
-pinned stock base used by the stack. This candidate removes the unused gosu
-helper from the runtime filesystem and runs as UID/GID 999. It is not the
-deployed image. The smoke test initializes an isolated volume using the stock
+and scans `postgres/Dockerfile` from a pinned stock base. This candidate removes
+the unused gosu helper from the runtime filesystem and runs as UID/GID 999.
+The smoke test initializes an isolated volume using the stock
 image, then verifies the candidate can read and write it without a change in
-server version, encoding, locale provider or collation version. This does not
-replace a rehearsal against a one-off recovery copy or a health check of every
-database consumer before a production change.
+server version, encoding, locale provider or collation version.
+
+Dispatch the workflow from `main` to publish the exact image that passed the
+smoke test and scan. Pin the resulting digest in the stack through a separate
+change, install the reviewed snapshot, and verify every database consumer
+after the protected infrastructure workflow deploys it.
