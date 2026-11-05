@@ -1,0 +1,49 @@
+name: PostgreSQL runtime candidate
+on:
+  pull_request:
+    paths:
+      - .github/workflows/postgres-candidate.yaml
+      - docker-compose.stack.yaml
+      - postgres/Dockerfile
+      - postgres/test-no-gosu.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build and smoke-test the candidate
+        run: |
+          set -eu
+          base=$(awk '$1 == "image:" && $2 ~ /^postgres:/ {print $2}' docker-compose.stack.yaml)
+          test -n "$base"
+          docker build --build-arg POSTGRES_BASE="$base" -t postgres-without-gosu -f postgres/Dockerfile postgres
+          sh postgres/test-no-gosu.sh "$base" postgres-without-gosu
+      - name: Scan the candidate and its stock base
+        run: |
+          set -eu
+          base=$(awk '$1 == "image:" && $2 ~ /^postgres:/ {print $2}' docker-compose.stack.yaml)
+          scanner=aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+          mkdir -p "$RUNNER_TEMP/postgres-reports"
+          docker save -o "$RUNNER_TEMP/postgres-base.tar" "$base"
+          docker save -o "$RUNNER_TEMP/postgres-candidate.tar" postgres-without-gosu
+          for variant in base candidate; do
+            docker run --rm -v trivy-cache:/root/.cache/trivy \
+              -v "$RUNNER_TEMP/postgres-$variant.tar:/image.tar:ro" \
+              -v "$RUNNER_TEMP/postgres-reports:/reports" "$scanner" \
+              image --input /image.tar --scanners vuln --format json --output "/reports/$variant.json"
+          done
+          docker run --rm -v trivy-cache:/root/.cache/trivy \
+            -v "$RUNNER_TEMP/postgres-candidate.tar:/image.tar:ro" "$scanner" \
+            image --input /image.tar --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1
+      - name: Upload the full reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: postgres-candidate-vulnerabilities
+          path: ${{ runner.temp }}/postgres-reports
