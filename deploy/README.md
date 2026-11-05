@@ -9,10 +9,9 @@ It cannot execute the checkout's code or accept replacement manifests from CI.
 
 Install a reviewed snapshot with `sudo sh deploy/install.sh ./release.pub`,
 using a dedicated Ed25519 public key. Put its private key in the GitHub
-`production` environment as `INFRA_RELEASE_KEY`, then set repository variable
-`RESTRICTED_DEPLOY_ENABLED=true`. Verify a deployment before deleting the old
-repository `DEPLOY_SSH_PRIVATE_KEY` secret. Other applications still using the
-shared `deploy` account need their own migration before that VPS key is revoked.
+`production` environment as `INFRA_RELEASE_KEY`. Verify a protected deployment.
+This workflow has no shared-key path. Other applications still using the shared
+`deploy` account need their own migration before that VPS key is revoked.
 
 Infrastructure changes require an administrator to review and install the new
 snapshot first. `python3 -B deploy/fingerprint.py` prints its expected fingerprint.

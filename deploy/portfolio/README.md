@@ -1,14 +1,27 @@
 # Restricted portfolio releases
 
-The application workflows may update the image of one existing Swarm service.
-They cannot create a service, change its networks/secrets/routing, supply a stack
-manifest, run a Docker command, or install the broker.
+This runbook migrates the three applications still using the shared VPS
+`deploy` account. Their new workflows may update only the image of one existing
+Swarm service. They cannot create a service, change its networks/secrets/routing,
+supply a stack manifest, run a Docker command, or install the broker.
 
-| Repository | Branch | VPS account | Service |
+| Repository being migrated | Branch | VPS account | Service |
 | --- | --- | --- | --- |
 | PerrySmithMoss/chinwag | master | chinwag-release | chinwag_chinwag-api |
 | PerrySmithMoss/logistics-realtime-dashboard | main | fleet-release | fleet_fleet-api |
 | PerrySmithMoss/VitaTrack | master | vita-track-release | vita-track_vita-track-api |
+
+The other production workflows already have separate release paths and do not
+use this new image-only broker:
+
+| Existing workflow | Branch | VPS account | What it deploys |
+| --- | --- | --- | --- |
+| [BulkBets Pipeline](https://github.com/PerrySmithMoss/BulkBets/blob/master/.github/workflows/pipeline.yaml) | master | bulkbets-release | BulkBets API service (`bulkbets_api`), including its application migrations; successful releases then promote the frontend to Vercel |
+| [Deploy to VPS](../../.github/workflows/deploy.yaml) | main | infra-release | The administrator-reviewed `perry-infra` stack: PostgreSQL, Traefik and the Docker API proxy |
+
+See the [BulkBets release broker](https://github.com/PerrySmithMoss/BulkBets/blob/master/deploy/restricted/README.md)
+and [infrastructure release broker](../README.md) for their own installation
+and recovery procedures.
 
 The release account can only request `release sha256:<64 lower-case hex> <40-character commit SHA>`.
 The broker pins the repository name, verifies the image's revision label, and
