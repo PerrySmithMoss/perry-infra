@@ -1,11 +1,11 @@
 # Restricted portfolio releases
 
-This runbook migrates the three applications still using the shared VPS
-`deploy` account. Their new workflows may update only the image of one existing
+Chinwag, Fleet and VitaTrack use dedicated VPS release accounts. Their
+workflows may update only the image of one existing
 Swarm service. They cannot create a service, change its networks/secrets/routing,
 supply a stack manifest, run a Docker command, or install the broker.
 
-| Repository being migrated | Branch | VPS account | Service |
+| Repository | Branch | VPS account | Service |
 | --- | --- | --- | --- |
 | PerrySmithMoss/chinwag | master | chinwag-release | chinwag_chinwag-api |
 | PerrySmithMoss/logistics-realtime-dashboard | main | fleet-release | fleet_fleet-api |
@@ -32,6 +32,9 @@ mounted secrets and reach peers on the existing shared overlay. Network isolatio
 between the legacy applications is a separate hardening step.
 
 ## Administrator installation and cutover
+
+Use these steps to install a release account on a replacement host or to
+review the existing cutover. The live shared credential has been retired.
 
 Migrate one app at a time. The current service must already have an immutable
 image digest from the app repository, and the host needs sudo 1.9.10+ and

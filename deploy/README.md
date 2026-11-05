@@ -10,8 +10,8 @@ It cannot execute the checkout's code or accept replacement manifests from CI.
 Install a reviewed snapshot with `sudo sh deploy/install.sh ./release.pub`,
 using a dedicated Ed25519 public key. Put its private key in the GitHub
 `production` environment as `INFRA_RELEASE_KEY`. Verify a protected deployment.
-This workflow has no shared-key path. Other applications still using the shared
-`deploy` account need their own migration before that VPS key is revoked.
+Chinwag, Fleet and VitaTrack use separate release accounts. The previous
+shared `deploy` account and credential have been retired.
 
 Infrastructure changes require an administrator to review and install the new
 snapshot first. `python3 -B deploy/fingerprint.py` prints its expected fingerprint.
@@ -20,8 +20,7 @@ an automatically proposed major PostgreSQL upgrade. No CI key can grant a new
 container a host mount, broaden networking or expose infrastructure secrets.
 
 The production workflow runs the image/proxy/certificate checks before deployment
-and uses a protected GitHub environment. The legacy deployment path is present
-only for migration and fails closed once its old repository key is removed.
+and uses the protected GitHub environment for administrator-reviewed snapshots.
 
 ## Portfolio application releases
 

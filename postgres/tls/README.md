@@ -32,14 +32,3 @@ container=$(docker ps -q --filter label=com.docker.swarm.service.name=perry-infr
 docker exec "$container" openssl x509 -in /run/secrets/bulkbets_db_cert -noout -fingerprint -sha256 -dates
 openssl x509 -in postgres/tls/server.crt -noout -fingerprint -sha256 -dates
 ```
-
-## PostgreSQL runtime candidate
-
-The security workflow also builds and scans `postgres/Dockerfile` from the same
-pinned stock base used by the stack. This candidate removes the unused gosu
-helper from the runtime filesystem and runs as UID/GID 999. It is not the
-deployed image. The smoke test initializes an isolated volume using the stock
-image, then verifies the candidate can read and write it without a change in
-server version, encoding, locale provider or collation version. This does not
-replace a rehearsal against a one-off recovery copy or a health check of every
-database consumer before a production change.
