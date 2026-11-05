@@ -42,15 +42,17 @@ version the config name in the stack before deploying. TLS secret rotations like
 need versioned names. The current server certificate expires February 6, 2029.
 
 Changes to this shared PostgreSQL service affect all portfolio apps. Use stop-first
-updates, a temporary verified recovery copy, and check application availability.
-Scheduled backups were explicitly declined by the owner for this portfolio.
+updates and check application availability after deployment. The owner accepts a
+fresh database if the existing data becomes unusable and authorized this rollout
+without a backup.
 
 The reverse proxies are Traefik 3.7.17 and HAProxy 3.4.7-alpine, pinned by digest.
 `docker-proxy/test.sh` verifies allowed discovery and denied container/credential/
 write requests before deployments. Weekly/manual image scans retain full reports.
 PostgreSQL runs directly as UID 999 with a read-only root filesystem, bounded tmpfs
 mounts, and a 640 MiB memory limit. Its existing data volume must belong to UID 999.
-This avoids invoking the image's gosu helper. Unfixed Debian library findings remain
-in the full scan artifact; the PostgreSQL gate checks newly fixable OS findings.
+The pinned runtime image removes the unused gosu helper. Unfixed Debian library
+findings remain in the scan artifact. The PostgreSQL gate fails on fixable high
+or critical findings.
 See BulkBets's `docs/security-remediation-2026-11-04.md` for reachability caveats and
 remaining administrator/plan access requirements.
