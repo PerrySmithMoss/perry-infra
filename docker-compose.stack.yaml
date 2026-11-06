@@ -79,7 +79,7 @@ services:
     logging:
       driver: json-file
       options: {max-size: "10m", max-file: "3"}
-    image: ghcr.io/perrysmithmoss/perry-infra-postgres@sha256:99a844ae84b960c15e29a8d5e85c1a56b9d451a5d5a7be98e79e923f03d1ec0b
+    image: ghcr.io/perrysmithmoss/perry-infra-postgres@sha256:6d79cb70e411a80ec759a5778b76c24ab7a0b9a5f97ab125acef24ef77e76f12
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/run/secrets/bulkbets_db_cert, -c, ssl_key_file=/run/secrets/bulkbets_db_key, -c, hba_file=/etc/postgresql/pg_hba.conf]
     configs:
       - source: postgres_hba
