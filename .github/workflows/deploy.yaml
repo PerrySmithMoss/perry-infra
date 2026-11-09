@@ -19,6 +19,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7.0.1
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: deploy/infrastructure/go.mod
+          cache: false
       - name: Check Docker API restrictions
         run: sh docker-proxy/test.sh
       - name: Configure verified SSH transport
@@ -48,8 +52,9 @@ jobs:
       - name: Deploy administrator-reviewed infrastructure snapshot
         run: |
           # Compute the fingerprint locally; the broker independently verifies its snapshot.
+          fingerprint=$(go -C deploy/infrastructure run . fingerprint ../..)
           # shellcheck disable=SC2029
-          ssh infra-vps "infrastructure $(python3 -B deploy/fingerprint.py)"
+          ssh infra-vps "infrastructure $fingerprint"
       - name: Remove runner credentials
         if: always()
         run: rm -f "$RUNNER_TEMP/infra-key" "$RUNNER_TEMP/infra-hosts" "$HOME/.ssh/config"
