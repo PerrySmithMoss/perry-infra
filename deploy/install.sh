@@ -17,6 +17,21 @@ printf '%s\n' "$key" | grep -Eq '^ssh-ed25519 [A-Za-z0-9+/=]+( [^[:cntrl:]]*)?$'
 cd "$(dirname "$0")/.."
 installed=/usr/local/libexec/perry-infra-release
 snapshot=/opt/perry-infra-release
+lock=/run/lock/perry-infra-release.lock
+# Publish a private lock file without opening a path an unprivileged user could
+# create in the sticky lock directory. A root-owned lock stays at the same path.
+if [ ! -e "$lock" ] && [ ! -L "$lock" ]; then
+  candidate=$(mktemp /run/lock/.perry-infra-release.XXXXXX)
+  ln -T -- "$candidate" "$lock" 2>/dev/null || :
+  rm -f -- "$candidate"
+fi
+if [ -L "$lock" ] || [ ! -f "$lock" ] || [ "$(stat -c '%u:%a' -- "$lock")" != 0:600 ]; then
+  echo 'Expected a root-owned infrastructure release lock with mode 600.' >&2
+  exit 1
+fi
+exec 9< "$lock"
+flock -n 9 || { echo 'An infrastructure release or installation is in progress.' >&2; exit 1; }
+
 install -d -o root -g root -m 755 /usr/local/libexec
 staging=$(mktemp -d /usr/local/libexec/.perry-infra-release.XXXXXX)
 trap 'rm -rf -- "$staging"' EXIT

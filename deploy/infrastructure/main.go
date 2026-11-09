@@ -72,7 +72,11 @@ func deploy(expected string) error {
 		return errors.New("infrastructure deployment requires root")
 	}
 	syscall.Umask(0o077)
-	lock, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR|syscall.O_NOFOLLOW, 0o600)
+	return deploySnapshot(snapshot, lockPath, expected, 15*time.Minute)
+}
+
+func deploySnapshot(root, lockName, expected string, timeout time.Duration) error {
+	lock, err := os.OpenFile(lockName, os.O_CREATE|os.O_RDWR|syscall.O_NOFOLLOW, 0o600)
 	if err != nil {
 		return fmt.Errorf("open infrastructure release lock: %w", err)
 	}
@@ -80,12 +84,12 @@ func deploy(expected string) error {
 	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		return fmt.Errorf("acquire infrastructure release lock: %w", err)
 	}
-	actual, err := fingerprint(snapshot)
+	actual, err := fingerprint(root)
 	if err != nil || actual != expected {
 		return errors.New("an administrator must install this exact infrastructure snapshot first")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", `set -eu
 set -a
@@ -93,7 +97,7 @@ set -a
 docker stack config -c docker-compose.stack.yaml >/dev/null
 docker stack deploy --resolve-image always --detach=false -c docker-compose.stack.yaml perry-infra
 curl --fail --retry 12 --retry-delay 5 --retry-all-errors --max-time 10 https://bulkbets-api.perrysmithmoss.com/api/v1/health`)
-	cmd.Dir = snapshot
+	cmd.Dir = root
 	cmd.Env = []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin", "HOME=/root", "DOCKER_HOST=unix:///var/run/docker.sock"}
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	// Stop the shell and its children before releasing the lock on timeout.
