@@ -1,6 +1,6 @@
 //go:build linux
 
-// portfolio-release provides an image-only deployment path for legacy services.
+// portfolio-release provides an image-only deployment path for portfolio services.
 package main
 
 import (
@@ -32,9 +32,10 @@ type policy struct {
 }
 
 var apps = map[string]policy{
-	"chinwag":    {"chinwag_chinwag-api", "ghcr.io/perrysmithmoss/chinwag"},
-	"fleet":      {"fleet_fleet-api", "ghcr.io/perrysmithmoss/logistics-realtime-dashboard"},
-	"vita-track": {"vita-track_vita-track-api", "ghcr.io/perrysmithmoss/vita-track"},
+	"chinwag":      {"chinwag_chinwag-api", "ghcr.io/perrysmithmoss/chinwag"},
+	"fleet":        {"fleet_fleet-api", "ghcr.io/perrysmithmoss/logistics-realtime-dashboard"},
+	"im-listening": {"im-listening_api", "ghcr.io/perrysmithmoss/im-listening-api"},
+	"vita-track":   {"vita-track_vita-track-api", "ghcr.io/perrysmithmoss/vita-track"},
 }
 
 var (

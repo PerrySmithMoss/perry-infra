@@ -4,11 +4,11 @@ set -eu
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export PATH
 [ "$(id -u)" = 0 ] && [ "$#" = 3 ] || {
-    echo 'Usage (as root): install.sh chinwag|fleet|vita-track BINARY PUBLIC_KEY' >&2
+    echo 'Usage (as root): install.sh chinwag|fleet|im-listening|vita-track BINARY PUBLIC_KEY' >&2
     exit 1
 }
 app=$1
-case "$app" in chinwag|fleet|vita-track) ;; *) exit 1 ;; esac
+case "$app" in chinwag|fleet|im-listening|vita-track) ;; *) exit 1 ;; esac
 account=$app-release
 binary=/usr/local/libexec/portfolio-release
 home=/var/lib/$account
