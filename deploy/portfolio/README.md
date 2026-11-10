@@ -1,6 +1,6 @@
 # Restricted portfolio releases
 
-Chinwag, Fleet and VitaTrack use dedicated VPS release accounts. Their
+Chinwag, Fleet, Im Listening and VitaTrack use dedicated VPS release accounts. Their
 workflows may update only the image of one existing
 Swarm service. They cannot create a service, change its networks/secrets/routing,
 supply a stack manifest, run a Docker command, or install the broker.
@@ -9,6 +9,7 @@ supply a stack manifest, run a Docker command, or install the broker.
 | --- | --- | --- | --- |
 | PerrySmithMoss/chinwag | master | chinwag-release | chinwag_chinwag-api |
 | PerrySmithMoss/logistics-realtime-dashboard | main | fleet-release | fleet_fleet-api |
+| PerrySmithMoss/im-listening | master | im-listening-release | im-listening_api |
 | PerrySmithMoss/VitaTrack | master | vita-track-release | vita-track_vita-track-api |
 
 The other production workflows already have separate release paths and do not

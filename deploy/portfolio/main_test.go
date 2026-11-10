@@ -32,6 +32,10 @@ func TestSSHBoundary(t *testing.T) {
 	if got, err := sshArgs("fleet-release", good); err != nil || !slices.Equal(got, want) {
 		t.Fatalf("got %v, %v", got, err)
 	}
+	want = []string{"-n", "--", installed, "release", "im-listening", digest, revision}
+	if got, err := sshArgs("im-listening-release", good); err != nil || !slices.Equal(got, want) {
+		t.Fatalf("got %v, %v", got, err)
+	}
 }
 
 type engineStub func(*http.Request) (*http.Response, error)
