@@ -82,6 +82,7 @@ sudo sh monitoring/verify.sh
 ```
 
 Before claiming, `sudo sh monitoring/verify.sh --local-only` checks local safety.
+Verification waits up to 30 seconds for the agent control pipe after startup.
 Full verification requires claimed/online status, checks the **running** config
 and no TCP listener on 19999, and reports systemd memory use including collectors.
 It deliberately prints no claim token. Do not paste entire cloud.d/claim.conf files.

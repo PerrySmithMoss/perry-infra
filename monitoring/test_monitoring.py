@@ -44,7 +44,7 @@ class StartupGuardTests(unittest.TestCase):
 
 class RuntimeVerificationTests(unittest.TestCase):
     def verify(self, *, runtime="[web]\nmode = none\n", listener="",
-               cloud="Claimed: Yes\nOnline: Yes\n", socket_error=False, local=False):
+               cloud="Claimed: Yes\nOnline: Yes\n", socket_error=False, local=False, ping_failures=0):
         # Substitute only host paths/command lookup in a disposable script copy.
         # All real privileged/system commands are replaced by deterministic stubs.
         with tempfile.TemporaryDirectory() as directory:
@@ -63,23 +63,38 @@ class RuntimeVerificationTests(unittest.TestCase):
                 "name=Path(sys.argv[0]).name\n"
                 "if name=='id': print('0')\n"
                 "elif name=='netdatacli':\n"
+                " if sys.argv[1]=='ping':\n"
+                "  counter=Path(os.environ['MOCK_PING_COUNTER'])\n"
+                "  count=int(counter.read_text()) if counter.exists() else 0\n"
+                "  counter.write_text(str(count+1))\n"
+                "  sys.exit(1 if count<int(os.environ['MOCK_PING_FAILURES']) else 0)\n"
                 " print(os.environ['MOCK_RUNTIME' if sys.argv[1]=='dumpconfig' else 'MOCK_CLOUD'])\n"
                 "elif name=='ss':\n"
                 " print(os.environ['MOCK_LISTENER'],end='')\n"
                 " sys.exit(int(os.environ['MOCK_SOCKET_ERROR']))\n"
             )
-            for name in ("id", "netdatacli", "ss", "systemctl", "free", "df"):
+            for name in ("id", "netdatacli", "ss", "systemctl", "free", "df", "sleep"):
                 command = root / name
                 command.write_text(mock)
                 command.chmod(0o755)
             env = dict(os.environ, MOCK_RUNTIME=runtime, MOCK_LISTENER=listener,
-                       MOCK_CLOUD=cloud, MOCK_SOCKET_ERROR=str(int(socket_error)))
+                       MOCK_CLOUD=cloud, MOCK_SOCKET_ERROR=str(int(socket_error)),
+                       MOCK_PING_COUNTER=str(root / "ping-counter"),
+                       MOCK_PING_FAILURES=str(ping_failures))
             return subprocess.run(["sh", str(root / "verify.sh")] +
                                   (["--local-only"] if local else []),
                                   env=env, capture_output=True, text=True)
 
     def test_cloud_online(self):
         self.assertEqual(self.verify().returncode, 0)
+
+    def test_waits_for_control_pipe_before_reading_config(self):
+        self.assertEqual(self.verify(ping_failures=2).returncode, 0)
+
+    def test_control_pipe_readiness_times_out(self):
+        result = self.verify(ping_failures=100)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("did not become ready", result.stderr)
 
     def test_local_check_before_claim(self):
         self.assertEqual(self.verify(cloud="Claimed: No", local=True).returncode, 0)

@@ -15,6 +15,18 @@ esac
 [ "$(id -u)" = 0 ] || { echo 'Run with sudo for complete socket/process checks.' >&2; exit 1; }
 sh "$base/check-config.sh" /etc/netdata/netdata.conf
 systemctl is-active --quiet netdata.service
+# Type=simple means systemctl restart can return before the control pipe exists.
+# Wait for Netdata's own readiness signal, while retaining a bounded failure path.
+attempt=0
+until netdatacli ping >/dev/null 2>&1; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 30 ] || ! systemctl is-active --quiet netdata.service; then
+        echo 'FAIL: Netdata control pipe did not become ready within 30 seconds.' >&2
+        echo 'Inspect: sudo journalctl -u netdata.service -n 80 --no-pager' >&2
+        exit 1
+    fi
+    sleep 1
+done
 # Check effective running configuration, not only the file waiting on disk.
 runtime=$(mktemp)
 trap 'rm -f -- "$runtime"' EXIT
