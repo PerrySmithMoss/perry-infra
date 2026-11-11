@@ -1,6 +1,6 @@
 # Shared portfolio infrastructure
 
-This repository manages Traefik, its restricted HAProxy Docker API proxy, and PostgreSQL
+This repository manages Traefik, its restricted HAProxy Docker API proxy, PostgreSQL and shared Redis
 for the existing single-node Docker Swarm. The live stack name is `perry-infra`.
 
 For owner-controlled recovery only, with `ACME_EMAIL` set and external networks
@@ -58,6 +58,12 @@ See BulkBets's `docs/security-remediation-2026-11-04.md` for reachability caveat
 remaining administrator/plan access requirements.
 
 ## Monitoring
+
+[Shared Redis operations](redis/README.md) covers the Im Listening data/session
+migration, private encrypted client overlay, per-application ACLs, memory and
+persistence policy, credential rotation and rollback. Redis adopts the existing
+`im-listening_redis-data` volume and publishes no port. The production cutover
+must precede deploying the application's shared-Redis manifest.
 
 [Netdata Community host monitoring](monitoring/README.md) is managed separately
 from Swarm releases: Cloud-only dashboard access, administrator installation,

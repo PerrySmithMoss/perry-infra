@@ -184,9 +184,10 @@ or Redis evictions are collected.
   plus only the access the chosen collector needs), with TLS as appropriate.
   Do not use the shared admin password or publish port 5432. Table/index metrics
   may require extra privileges/connections; review before enabling.
-- Redis belongs to the im-listening stack, not this repo. Configure its metrics
-  ACL/connection through that app's infrastructure with only required INFO access;
-  do not expose 6379 publicly.
+- Shared Redis is owned by perry-infra; follow the [migration runbook](../redis/README.md)
+  and verify the production cutover before changing collection. Configure a separate
+  collector ACL with only required commands and an administrator-reviewed private
+  connection path. Do not reuse application/admin credentials or expose 6379 publicly.
 - Traefik currently has no metrics endpoint. A later change can enable a dedicated
   private metrics entrypoint and collector path, reviewed with the Swarm snapshot.
   Do not expose the API/dashboard or put it on the public web entrypoints.

@@ -25,6 +25,13 @@ jobs:
         with:
           go-version-file: deploy/portfolio/go.mod
           cache: false
+      - name: Verify shared Redis ACLs and persistence with deployed app clients
+        run: |
+          go -C redis test -race ./...
+          go -C redis vet ./...
+          sh -n redis/test.sh
+          shellcheck redis/*.sh
+          sh redis/test.sh
       - name: Check restricted infrastructure deployment boundary
         run: |
           go -C deploy/infrastructure test -race ./...

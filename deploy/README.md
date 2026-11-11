@@ -3,7 +3,8 @@
 `infra-release` is a dedicated SSH account with no Docker group membership,
 interactive shell, SFTP or forwarding. Its root-owned forced command accepts
 only `infrastructure <sha256 fingerprint>`. The root broker recalculates the
-fingerprint from the installed compose file, HBA file and Docker proxy config.
+fingerprint from the installed compose file, HBA file, Docker proxy config and
+`redis/redis.conf`.
 It deploys only `/opt/perry-infra-release`, using a root-owned ACME email setting.
 It cannot execute the checkout's code or accept replacement manifests from CI.
 
@@ -59,6 +60,15 @@ container a host mount, broaden networking or expose infrastructure secrets.
 
 The production workflow runs the image/proxy/certificate checks before deployment
 and uses the protected GitHub environment for administrator-reviewed snapshots.
+
+Shared Redis adds an immutable `redis_shared_v1` Docker config and external
+versioned ACL/healthcheck secrets. Changes to `redis/redis.conf` require both
+a new config name in the manifest and installation of the matching snapshot.
+The broker fingerprint includes the file; CI cannot replace it independently.
+Follow the [Redis cutover runbook](../redis/README.md) before installing the first
+Redis snapshot: the old server must be stopped before the shared service mounts
+its volume. The application broker's recorded spec must then be refreshed for
+its changed network and URL secret. No release account gains new host access.
 
 ## Portfolio application releases
 
