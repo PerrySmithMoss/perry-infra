@@ -147,26 +147,28 @@ Use UptimeRobot Free: five-minute HTTP(S) checks, verified email down/up alerts,
 and no public status page needed. Enable account MFA if offered. Netdata port
 19999, PostgreSQL and Redis must remain private.
 
-`endpoints.tsv` is the inventory, **not** an automatic provisioning job. BulkBets, Im Listening and Fleet URLs were verified against the running apps
-(GET/HEAD as listed). Replace TBD entries after checking
-the relevant app route and public domain; never guess routes and silently monitor
-a frontend login page. Use a cheap app-served health endpoint through Traefik with
-200 on health, non-2xx on failure, no redirect to a login page, and no internal data.
-Use a keyword check if the response content is required to distinguish failure.
-Dependency readiness checks should have short timeouts and no heavy DB queries.
+`endpoints.tsv` is the inventory, **not** an automatic provisioning job. It lists
+the public endpoints and expected request methods for all five APIs. Use each
+app-served health endpoint through Traefik, not a frontend/login page or shared
+proxy response. Verify status, response content and redirect behaviour before
+creating a monitor. Health responses must contain no internal diagnostics.
 
-For each confirmed URL, create a monitor with 300-second interval and the verified
-owner email attached. The Free UI currently uses HEAD for ordinary HTTP monitors;
-custom methods and status codes are paid. Im Listening and Fleet support HEAD.
+For each URL, create a monitor with 300-second interval and owner email alerts.
+The Free UI currently uses HEAD for ordinary HTTP monitors; custom methods and
+status codes are paid. Im Listening, Fleet, Chinwag and Vita Track support HEAD.
 For BulkBets use a **keyword** monitor requiring `A-OK!` in the GET response:
-its GET succeeds but HEAD returns 405. Verify the resulting monitor is Up.
-Chinwag needs a public health endpoint: accepting its existing 403 probe as healthy
-requires custom status handling. Vita Track needs a simple public health endpoint:
-its GraphQL Docker probe uses POST plus JSON headers, and headerless GET is rejected
-by its CSRF protection. Do not disable auth/CSRF or buy a plan just to work around
-this; add dedicated health routes in those app repositories. Until then they are
-explicit coverage gaps, not working app-health monitors. Check response
-and redirect behaviour before enabling. Send a test notification and confirm it.
+its GET succeeds but HEAD returns 405. Verify every monitor reports Up.
+
+Chinwag and Vita Track expose `/healthz` as lightweight process-liveness routes:
+GET returns 200 with `{ "status": "ok" }`, HEAD returns 200 without a body, and
+responses use `Cache-Control: no-store`. They require no cookies or GraphQL
+headers and perform no database query. They do not prove ongoing database
+availability. Their existing Docker probes remain intact, as do application
+authentication and GraphQL CSRF protection. Add separate readiness checks if you
+need continuous dependency verification, with short timeouts and cheap queries.
+
+Confirm actual receipt of a test notification; a green monitor or attached email
+contact alone does not verify mailbox delivery.
 For an end-to-end down/up test, use a temporary test monitor: start with a healthy
 URL, change it to a verified failing URL, receive the down email, restore the
 healthy URL, and receive recovery. Do not stop production services for this test.

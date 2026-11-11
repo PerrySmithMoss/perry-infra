@@ -2,5 +2,5 @@ service	url	expected_status	method	interval_seconds	monitor_type	notes
 bulkbets_api	https://bulkbets-api.perrysmithmoss.com/api/v1/health	200	GET	300	keyword	Require A-OK!; HEAD returns 405
 im-listening_api	https://im-listening-api.perrysmithmoss.com/healthz	200	HEAD	300	http	GET also returns status ok
 fleet_fleet-api	https://fleet-api.perrysmithmoss.com/health/ready	200	HEAD	300	http	GET reports UP
-chinwag_chinwag-api	TBD	200	GET	300	pending	Host chinwag-api.perrysmithmoss.com; existing Docker probe expects 403 on /api/users/me; add dedicated public health endpoint
-vita-track_vita-track-api	TBD	200	GET	300	pending	Host vita-track-api.perrysmithmoss.com; Docker probe POSTs to /graphql; headerless GET is rejected by CSRF protection
+chinwag_chinwag-api	https://chinwag-api.perrysmithmoss.com/healthz	200	HEAD	300	http	Process liveness; GET returns status ok; existing Docker auth probe retained
+vita-track_vita-track-api	https://vita-track-api.perrysmithmoss.com/healthz	200	HEAD	300	http	Process liveness outside GraphQL; GET returns status ok; Docker GraphQL probe and CSRF protection retained
