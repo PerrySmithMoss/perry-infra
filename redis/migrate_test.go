@@ -7,6 +7,35 @@ import (
 	"time"
 )
 
+func TestRollbackRequiresOriginalResourceIDs(t *testing.T) {
+	spec := []byte(`[{"Spec":{"TaskTemplate":{"Networks":[{"Target":"original-network-id"}],"ContainerSpec":{"Secrets":[{"SecretID":"original-secret-id"}],"Configs":[{"ConfigID":"original-config-id"}]}}}}]`)
+	for _, missing := range []string{"", "original-network-id", "original-secret-id", "original-config-id"} {
+		seen := map[string]bool{}
+		err := checkRollbackResources(func(args ...string) ([]byte, error) {
+			if len(args) != 3 || args[1] != "inspect" {
+				t.Fatal("rollback preflight may only inspect resources")
+			}
+			seen[args[2]] = true
+			if args[2] == missing {
+				return nil, errors.New("resource removed")
+			}
+			return nil, nil
+		}, spec)
+		if missing == "" {
+			if err != nil || len(seen) != 3 {
+				t.Fatal("valid rollback dependencies rejected")
+			}
+		} else if err == nil || !strings.Contains(err.Error(), "no services stopped") {
+			t.Fatal("missing original resource did not fail safely")
+		}
+	}
+	for _, invalid := range []string{`[]`, `not json`, `[{"Spec":{}}]`, `[{"Spec":{"TaskTemplate":{"Networks":[{"Target":""}]}}}]`} {
+		if err := checkRollbackResources(func(...string) ([]byte, error) { t.Fatal("invalid input must not invoke Docker"); return nil, nil }, []byte(invalid)); err == nil {
+			t.Fatal("accepted invalid rollback metadata")
+		}
+	}
+}
+
 func TestScaleWaitsForStoppedContainersWithoutAttachedMonitor(t *testing.T) {
 	polls := 0
 	err := scaleWith(func(args ...string) ([]byte, error) {

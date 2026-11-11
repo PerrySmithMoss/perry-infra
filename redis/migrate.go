@@ -599,6 +599,17 @@ func rollback() error {
 			return err
 		}
 	}
+	// Docker cannot recreate retired secrets/configs/networks from their names.
+	// Check the saved IDs before stopping either live service.
+	for _, name := range []string{"api-service.json", "redis-service.json"} {
+		data, err := os.ReadFile(filepath.Join(migrationState, name))
+		if err != nil {
+			return err
+		}
+		if err := checkRollbackResources(docker, data); err != nil {
+			return err
+		}
+	}
 	if err := scale(apiService, 0); err != nil {
 		return err
 	}
@@ -630,4 +641,44 @@ func rollback() error {
 		}
 	}
 	return privateFile("status", []byte("rolled-back\n"))
+}
+
+func checkRollbackResources(run func(...string) ([]byte, error), data []byte) error {
+	var saved []struct {
+		Spec struct {
+			TaskTemplate struct {
+				Networks      []struct{ Target string }
+				ContainerSpec struct {
+					Secrets []struct{ SecretID string }
+					Configs []struct{ ConfigID string }
+				}
+			}
+		}
+	}
+	if json.Unmarshal(data, &saved) != nil || len(saved) != 1 {
+		return errors.New("invalid saved rollback specification; no services stopped")
+	}
+	task := saved[0].Spec.TaskTemplate
+	var refs [][2]string
+	for _, network := range task.Networks {
+		refs = append(refs, [2]string{"network", network.Target})
+	}
+	for _, secret := range task.ContainerSpec.Secrets {
+		refs = append(refs, [2]string{"secret", secret.SecretID})
+	}
+	for _, config := range task.ContainerSpec.Configs {
+		refs = append(refs, [2]string{"config", config.ConfigID})
+	}
+	if len(refs) == 0 {
+		return errors.New("saved rollback specification has no resources; no services stopped")
+	}
+	for _, ref := range refs {
+		if ref[1] == "" {
+			return errors.New("invalid saved rollback resource ID; no services stopped")
+		}
+		if _, err := run(ref[0], "inspect", ref[1]); err != nil {
+			return errors.New("migration rollback resources were retired or are unavailable; no services stopped")
+		}
+	}
+	return nil
 }

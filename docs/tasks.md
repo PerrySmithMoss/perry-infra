@@ -64,8 +64,15 @@ verification in production; configuration alone is not evidence of coverage.
   The restricted application release check passed; the installed infra fingerprint
   matches this checkout. All five public health endpoints returned 200. Redis has
   no published port or host listener, and external TCP 6379 was unreachable.
-  Removed the old zero-replica service only after those checks; retained the volume,
-  old secrets/network, saved service specs and root-only backup for rollback.
+  Removed the old zero-replica service only after those checks; initially retained
+  the old secrets/network for rollback. The owner retired that migration rollback
+  window on 2026-11-11: removed the unused overlay and both v1 Redis secrets, 25
+  stopped Swarm containers, 67 obsolete cached images and duplicate staging files.
+  Retained the live data volume, current/previous images, explicitly allowed image
+  fallbacks and root-only credentials/backups. Image storage dropped from 19.04 GB
+  to 4.87 GB; all five health endpoints passed afterward. The rollback helper now
+  checks the original resource IDs before stopping services. The two unused
+  historical VitaTrack volumes require a separate data-retention review.
   See [the cutover/rotation/rollback runbook](../redis/README.md). Disposable AOF
   preservation tests and the Redis high/critical vulnerability scan also passed.
 

@@ -171,6 +171,12 @@ later app deployments cannot own its lifecycle.
 
 ## Rollback
 
+The 2026-11-11 migration's old-stack rollback window is now closed; see
+[production cleanup](#production-cleanup-2026-11-11). The procedure below applies
+only while the original migration resources still exist. The helper checks saved
+network/secret/config IDs before stopping either live service and refuses rollback
+when any dependency has been retired.
+
 Pause releases and use the administrator connection:
 
 ```sh
@@ -221,9 +227,10 @@ Live acceptance checks passed:
   revision against the newly recorded policy. The installed infrastructure
   fingerprint matches this checkout. All five public API health endpoints returned 200.
 
-After verification, `im-listening_redis` was removed. The original overlay, old
-secrets, current data volume, saved specs and root-only installation/data backups
-remain available for rollback. The state file in the private migration directory
+After verification, `im-listening_redis` was removed. The original overlay and old
+secrets were retained until the owner retired the migration rollback window below.
+The current data volume, saved specs and root-only installation/data backups remain.
+The state file in the private migration directory
 records the last automated checkpoint (`awaiting-browser-verification`); this
 runbook and `docs/tasks.md` record the subsequent manual verification and removal.
 
@@ -236,6 +243,37 @@ ssh pez-vps 'api=$(docker ps -q --filter label=com.docker.swarm.service.name=im-
 This creates and removes a temporary account and about 120 cheap requests from
 an isolated reserved test address; run it deliberately, not as a recurring health
 probe. `redis-admin verify CHECKOUT` separately repeats the private ACL/client checks.
+
+## Production cleanup, 2026-11-11
+
+After both PRs merged, CI/deployments passed and the owner explicitly ended the
+migration rollback window, the following unused resources were removed:
+
+- Overlay `im-listening_sessions`.
+- Secrets `im_listening_redis_url_v1` and `im_listening_redis_config_v1`.
+- 25 stopped Swarm containers and 67 old cached images across the VPS.
+- Duplicate migration binaries/source archive and 51 macOS archive metadata files.
+- Three obsolete deployment staging bundles containing pre-shared-Redis manifests,
+  old installers and Python brokers. Checksums/public-key audit records were
+  preserved separately; installed root-owned broker/snapshot paths were retained.
+
+The service audit checked current and previous specifications before removing the
+old network/secrets. Cache cleanup retained every current/previous service image
+and both Im Listening images in `API_ROLLBACK_ALLOWLIST`; it used no forced image
+removals. The VPS now has 9 running containers and 16 retained images. Docker image
+storage fell from 19.04 GB to 4.87 GB. Ordinary image release rollback remains
+available; restoring the former app-owned Redis stack is retired.
+
+Keep **`im-listening_redis-data`**: it is the live shared Redis volume. Current
+Redis config/ACL/healthcheck secrets, application URL, admin/probe credentials,
+administrator tooling and the root-only credential/backup directory are still
+required or deliberately retained. No active stack, database or current credential
+was deleted. All five public API health endpoints passed after cleanup.
+
+Two unreferenced historical volumes, `vita-track_postgres_data` and
+`vita-track_letsencrypt`, remain pending a data-retention review. They contain
+persistent data and were not treated as disposable cache. Other unmounted secrets
+used by administration, migrations or verification were retained as well.
 
 ## Rotate a single credential
 
