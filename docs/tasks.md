@@ -45,13 +45,21 @@ verification in production; configuration alone is not evidence of coverage.
   latency, and 5xx metrics per service where supported. Document alert settings,
   deployment verification, and rollback.
 
-- [ ] **Verify end-to-end monitoring email delivery.**
-  Confirm receipt of the UptimeRobot test email already requested; resend a test
-  if necessary after checking the owner alert contact and spam folder. Once the
-  VPS agent is installed and claimed, stop only Netdata briefly, verify the
-  Cloud Unreachable email, restart it even if email fails, and verify recovery.
-  Do not stop production applications. Confirm Critical, Warning, Clear,
-  Reachable, and Unreachable email selections remain enabled on Community after
-  any Business trial. Record the test date and result without publishing private
-  mailbox content or credentials. Receipt and recovery verification are required
-  before marking this task complete.
+- [x] **Verify Netdata outage and recovery email delivery.**
+  Verified on 2026-11-11: the owner stopped only Netdata and received the Cloud
+  Unreachable email. After restarting Netdata, the charts returned and the owner
+  received the Reachable recovery email. Production applications remained running.
+  The agent passed local Cloud-only checks and was claimed/online; the Cloud
+  dashboard showed all nine containers. The temporary claim-token file was removed.
+
+- [ ] **Confirm UptimeRobot email delivery.**
+  A test notification was requested for Fleet API, but mailbox receipt has not
+  been confirmed. Confirm receipt or resend a test after checking the owner alert
+  contact and spam folder. Record the result before considering external-monitor
+  notification delivery verified; Netdata emails do not prove this separate path.
+
+- [ ] **Recheck personal email settings on the Community plan after the trial.**
+  Confirm Critical, Warning, Clear, Reachable, and Unreachable email selections
+  remain enabled after the Business trial ends, or after explicitly switching to
+  Community. Keep the tested Netdata outage/recovery result above; this is a
+  separate check of post-trial feature availability.
