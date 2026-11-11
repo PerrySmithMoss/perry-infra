@@ -50,10 +50,11 @@ if ! id infra-release >/dev/null 2>&1; then
   useradd --system --user-group --home-dir /var/lib/infra-release --shell /bin/sh --password '*' infra-release
 fi
 [ "$(id -nG infra-release)" = infra-release ] || { echo 'Release account has unexpected supplementary groups.' >&2; exit 1; }
-install -d -o root -g root -m 755 "$snapshot" "$snapshot/postgres" "$snapshot/docker-proxy" /var/lib/infra-release /var/lib/infra-release/.ssh
+install -d -o root -g root -m 755 "$snapshot" "$snapshot/postgres" "$snapshot/docker-proxy" "$snapshot/redis" /var/lib/infra-release /var/lib/infra-release/.ssh
 install -o root -g root -m 644 docker-compose.stack.yaml "$snapshot/"
 install -o root -g root -m 644 postgres/pg_hba.conf "$snapshot/postgres/"
 install -o root -g root -m 644 docker-proxy/haproxy.cfg "$snapshot/docker-proxy/"
+install -o root -g root -m 644 redis/redis.conf "$snapshot/redis/"
 install -o root -g root -m 600 "$staging/deployment.env" "$snapshot/deployment.env"
 install -o root -g root -m 440 "$staging/sudoers" /etc/sudoers.d/perry-infra-release
 visudo -c

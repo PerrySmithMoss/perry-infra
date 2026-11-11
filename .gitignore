@@ -6,3 +6,7 @@ monitoring/*.secret
 monitoring/.claim.*
 monitoring/kickstart.sh
 __pycache__/
+redis/*.secret
+redis/*.env
+redis/credentials/
+perry-infra-release

@@ -30,7 +30,7 @@ var (
 
 func fingerprint(root string) (string, error) {
 	hash := sha256.New()
-	for _, name := range []string{"docker-compose.stack.yaml", "postgres/pg_hba.conf", "docker-proxy/haproxy.cfg"} {
+	for _, name := range []string{"docker-compose.stack.yaml", "postgres/pg_hba.conf", "docker-proxy/haproxy.cfg", "redis/redis.conf"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			return "", err

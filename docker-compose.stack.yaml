@@ -71,6 +71,45 @@ services:
       restart_policy:
         condition: any
 
+  redis:
+    image: redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
+    user: "999:1000"
+    command: [redis-server, /etc/redis/redis.conf]
+    configs:
+      - {source: redis_shared_v1, target: /etc/redis/redis.conf}
+    secrets:
+      - {source: redis_users_v1, target: redis_users, uid: "999", gid: "1000", mode: 0400}
+      - {source: redis_healthcheck_password_v1, target: redis_healthcheck_password, uid: "999", gid: "1000", mode: 0400}
+    networks: [redis_clients]
+    volumes:
+      - redis_data:/data
+    read_only: true
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$(cat /run/secrets/redis_healthcheck_password) redis-cli --user healthcheck ping | grep -qx PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits: {memory: 192M, cpus: "0.25", pids: 64}
+      update_config:
+        order: stop-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+
   postgres:
     # Existing data volume belongs to UID 999.
     user: "999:999"
@@ -126,10 +165,17 @@ services:
         tmpfs: {size: 67108864, mode: 01777}
 
 volumes:
+  redis_data:
+    # Adopt the existing physical volume. Never run the old and new servers
+    # together, and never remove this volume during stack cleanup.
+    external: true
+    name: im-listening_redis-data
   postgres_data:
   letsencrypt:
 
 networks:
+  redis_clients:
+    external: true
   bulkbets_ingress:
     external: true
   bulkbets_database:
@@ -142,12 +188,18 @@ networks:
     external: true
 
 configs:
+  redis_shared_v1:
+    file: ./redis/redis.conf
   docker_proxy:
     file: ./docker-proxy/haproxy.cfg
   postgres_hba:
     file: ./postgres/pg_hba.conf
 
 secrets:
+  redis_users_v1:
+    external: true
+  redis_healthcheck_password_v1:
+    external: true
   bulkbets_db_key:
     external: true
   bulkbets_db_cert:
