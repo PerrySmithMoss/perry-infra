@@ -56,3 +56,10 @@ findings remain in the scan artifact. The PostgreSQL gate fails on fixable high
 or critical findings.
 See BulkBets's `docs/security-remediation-2026-11-04.md` for reachability caveats and
 remaining administrator/plan access requirements.
+
+## Monitoring
+
+[Netdata Community host monitoring](monitoring/README.md) is managed separately
+from Swarm releases: Cloud-only dashboard access, administrator installation,
+private claim-token entry, safety checks, personal email alert setup, and an
+external API-check inventory. The infra-release CI account gains no host access.

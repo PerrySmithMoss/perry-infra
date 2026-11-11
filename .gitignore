@@ -1,0 +1,8 @@
+# Local monitoring credentials and installer artifacts must never enter this public repo.
+monitoring/claim.conf
+monitoring/cloud.d/
+monitoring/*.env
+monitoring/*.secret
+monitoring/.claim.*
+monitoring/kickstart.sh
+__pycache__/
