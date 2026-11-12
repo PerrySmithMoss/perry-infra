@@ -743,9 +743,12 @@ applicable); custom Redis memory/eviction rules were Clear and Traefik 5xx was
 Clear for all four monitored entrypoints. Browser screenshots are retained
 outside Git in the local `final-acceptance` evidence directory. No alert
 configuration or notification settings were changed. The combined checks passed
-with the previously accepted Fleet provider-quota exception explicitly retained;
-at that point the runner awaited owner acceptance, which subsequently completed
-as recorded below. No task checkbox is closed.
+with the previously accepted Fleet provider-quota exception explicitly retained.
+The owner subsequently entered `pass accept` and the runner completed final
+verification, recorded the reviewed image-release policies, cleared maintenance
+and reported successful completion. Protected CI release/rollback checks are
+now in progress; old overlays and both audit sets remain retained. No task
+checkbox is closed.
 
 | App | HTTPS, auth and core flow | Database/migrations and isolation | Redis | Monitoring, restricted release and rollback |
 | --- | --- | --- | --- | --- |
@@ -763,8 +766,3 @@ results. Only then close the task checkbox.
 Design references: [Docker Swarm networking](https://docs.docker.com/engine/swarm/networking/),
 [Traefik Swarm network selection](https://doc.traefik.io/traefik/v3.4/providers/swarm/),
 and [PostgreSQL HBA matching](https://www.postgresql.org/docs/17/auth-pg-hba-conf.html).
-The owner subsequently entered `pass accept` and the runner completed final
-verification, recorded the reviewed image-release policies, cleared maintenance
-and reported successful completion. Protected CI release/rollback checks are
-now in progress; old overlays and both audit sets remain retained.
-
