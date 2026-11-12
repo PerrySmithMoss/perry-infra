@@ -81,6 +81,21 @@ before invoking this installer and the restricted broker.
 
 ## Portfolio application releases
 
+The [application network isolation runbook](isolation/README.md) coordinates the
+new external overlays with per-app manifests and administrator-recorded service
+policies. Do not deploy the target snapshot before its staged cutover. During
+migration the administrator's `network-maintenance` marker blocks normal
+infrastructure releases, including a matching old fingerprint. Only the local
+root-only `network-finalize DIGEST` path can deploy through that marker; it still
+requires the matching installed fingerprint and normal exclusive release lock.
+The SSH parser and sudo rule expose only the existing single-digest command.
+The marker remains until production acceptance; rollback inputs stay root-only.
+The administrator's guided `perry-network-admin run EXPECTED_FINGERPRINT` command
+orchestrates both rollout passes and the rollback drill, holds application release
+locks across browser checks, and installs the snapshot/records policies only
+through the reviewed administrator path. It is not exposed to CI or SSH release
+accounts. See the runbook for the staged single command and remaining evidence.
+
 See [the restricted portfolio release runbook](portfolio/README.md) for the
 Chinwag, Fleet and VitaTrack image-only broker, administrator installation,
 protected workflow setup, rollback checks and shared credential retirement.

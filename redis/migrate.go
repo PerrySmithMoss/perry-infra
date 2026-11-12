@@ -38,6 +38,7 @@ type serviceSnapshot struct {
 		Name         string
 		Mode         struct{ Replicated *struct{ Replicas uint64 } }
 		TaskTemplate struct {
+			Networks      []struct{ Target string }
 			ContainerSpec struct {
 				Image  string
 				Mounts []struct{ Source, Target string }
@@ -495,12 +496,20 @@ func verifyProduction(root string) error {
 	if err != nil {
 		return err
 	}
+	redis, _, err := service(sharedRedis)
+	if err != nil {
+		return err
+	}
+	clientNetwork, err := verificationNetwork(docker, api, redis)
+	if err != nil {
+		return err
+	}
 	name := fmt.Sprintf("redis-verify-%d", time.Now().UnixNano())
 	if _, err := command(nil, "/usr/bin/docker", "config", "create", name, root+"/redis/verify.mjs"); err != nil {
 		return err
 	}
 	defer docker("config", "rm", name)
-	args := []string{"service", "create", "--detach=true", "--name", name, "--mode", "replicated-job", "--restart-condition", "none", "--network", "redis_clients",
+	args := []string{"service", "create", "--detach=true", "--name", name, "--mode", "replicated-job", "--restart-condition", "none", "--network", clientNetwork,
 		"--read-only", "--cap-drop", "ALL", "--limit-memory", "128M", "--limit-cpu", "0.25",
 		"--config", "source=" + name + ",target=/app/shared-redis-verify.mjs"}
 	for _, secret := range []string{"redis_admin_url_v1", "redis_probe_url_v1", "im_listening_redis_url_v2"} {
@@ -546,6 +555,46 @@ func verifyProduction(root string) error {
 		time.Sleep(time.Second)
 	}
 	return errors.New("private verification job timed out")
+}
+
+// Support both sides of the administrator's network cutover without attaching a
+// verifier (or any application) to an additional shared client overlay.
+func verificationNetwork(run func(...string) ([]byte, error), api, redis serviceSnapshot) (string, error) {
+	var matches []string
+	for _, name := range []string{"im_listening_redis_clients", "redis_clients"} {
+		data, err := run("network", "inspect", name)
+		if err != nil {
+			continue
+		}
+		var rows []struct {
+			ID, Driver           string
+			Internal, Attachable bool
+			Options              map[string]string
+		}
+		if json.Unmarshal(data, &rows) != nil || len(rows) != 1 {
+			return "", errors.New("invalid Redis client overlay")
+		}
+		n := rows[0]
+		_, encrypted := n.Options["encrypted"]
+		if n.Driver != "overlay" || !n.Internal || n.Attachable || !encrypted {
+			return "", errors.New("Redis client overlay is not private/encrypted/non-attachable")
+		}
+		contains := func(s serviceSnapshot) bool {
+			for _, network := range s.Spec.TaskTemplate.Networks {
+				if network.Target == n.ID {
+					return true
+				}
+			}
+			return false
+		}
+		if contains(api) && contains(redis) {
+			matches = append(matches, name)
+		}
+	}
+	if len(matches) != 1 {
+		return "", errors.New("expected one reviewed Redis client overlay shared by the API and Redis")
+	}
+	return matches[0], nil
 }
 
 // Restore the saved Docker service spec via the administrator's local socket.

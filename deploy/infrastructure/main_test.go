@@ -76,11 +76,41 @@ func TestSSHCommand(t *testing.T) {
 		"", "id", "docker system dial-stdio", "internal-sftp", "infrastructure ../../tmp",
 		command + ";id", command + "\n", command + " extra", command + "a",
 		"infrastructure  " + digest, "infrastructure\t" + digest, "infrastructure " + strings.ToUpper(digest),
+		"network-finalize " + digest, "network-maintenance-check",
 		"infrastructure " + digest[:63],
 	} {
 		if _, err := sshArgs(invalid); err == nil {
 			t.Errorf("accepted SSH command %q", invalid)
 		}
+	}
+}
+
+func TestMaintenanceBlocksCIAndRequiresExplicitAdministratorFinalization(t *testing.T) {
+	root, _ := snapshotFixture(t)
+	lockName := filepath.Join(root, "release.lock")
+	writeFixture(t, root, "deployment.env", "touch sourced; exit 0\n")
+	digest, err := fingerprint(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deploySnapshotMode(root, lockName, digest, time.Second, true) == nil {
+		t.Fatal("finalization accepted missing maintenance marker")
+	}
+	writeFixture(t, root, "network-maintenance", "administrator migration\n")
+	if deploySnapshot(root, lockName, digest, time.Second) == nil {
+		t.Fatal("CI was allowed to undo an intermediate migration")
+	}
+	if _, err := os.Stat(filepath.Join(root, "sourced")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("blocked CI sourced runtime environment")
+	}
+	if deploySnapshotMode(root, lockName, strings.Repeat("0", 64), time.Second, true) == nil {
+		t.Fatal("maintenance bypassed the snapshot fingerprint")
+	}
+	if err := deploySnapshotMode(root, lockName, digest, time.Second, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "network-maintenance")); err != nil {
+		t.Fatal("finalization cleared the marker before production verification")
 	}
 }
 

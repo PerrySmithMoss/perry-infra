@@ -8,8 +8,13 @@ digest through cutover; upgrades are separate changes.
 
 ## Private clients and permissions
 
-The administrator creates `redis_clients` as an **internal, encrypted,
-non-attachable overlay**. Only approved client services and Redis join it.
+The target network-isolation snapshot uses `im_listening_redis_clients` as an
+**internal, encrypted, non-attachable overlay**, shared only by Im Listening and
+the existing shared `perry-infra_redis` service. This is a client network, not a
+second Redis service. Production migration from the current `redis_clients`
+overlay is pending; use the [staged isolation runbook](../deploy/isolation/README.md)
+before deploying the target snapshot. Separate future clients onto their own
+Redis overlays so they cannot reach each other directly.
 There are no published Redis ports, Traefik routes, host mounts or connections
 from the general `portfolio_network`. Clients use DB 0; database numbers do not
 provide tenant isolation. Named ACL users restrict keys and commands instead.
@@ -38,7 +43,8 @@ See [Redis ACL documentation](https://redis.io/docs/latest/operate/oss_and_stack
 
 For another approved application, review its exact commands and key prefix,
 add a separate hashed ACL user and versioned URL secret, update the reviewed
-infrastructure snapshot, and attach only its service to `redis_clients`.
+infrastructure snapshot, and create an internal encrypted non-attachable overlay
+shared only by Redis and that application's service.
 Give every application a unique prefix and a different credential. Run the
 bidirectional denial tests before admitting its workload. The probe is a real
 second-user/network test, not an additional production application deployment.
@@ -83,6 +89,11 @@ builder, the amd64 application fixture uses emulation. Override
 `REDIS_TEST_API_IMAGE` when reviewing a newer application image.
 
 ## Production cutover (administrator)
+
+This section records the original 2026-11-11 shared-Redis migration and its
+historical `redis_clients` network. Do not rerun it for network isolation. The
+current `verify` command detects the one approved overlay actually shared by
+Redis and Im Listening, supporting both sides of the staged network migration.
 
 Completion requires live checks; a committed manifest is not proof of migration.
 Coordinate the `im-listening/docker-stack.yaml` change with this snapshot.

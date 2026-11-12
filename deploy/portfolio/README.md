@@ -30,8 +30,16 @@ checks the reviewed service ID and configuration before and after updating the
 image. Swarm rejects the update if the verified service version has changed.
 The revision label is a consistency check. Control of the app's package
 still allows release of arbitrary application code. That code can use its own
-mounted secrets and reach peers on the existing shared overlay. Network isolation
-between the legacy applications is a separate hardening step.
+mounted secrets and reach peers on its administrator-reviewed overlays. The
+[staged isolation runbook](../isolation/README.md) moves the legacy applications
+off the shared overlay and requires reviewing/recording the new per-app network
+IDs and Traefik label before image releases resume. It does not broaden any
+release account's permissions.
+The guided administrator cutover holds all application release locks while
+prompting for functional checks. After final acceptance it verifies each complete
+service specification against the retained network-only change and records this
+broker's existing policy format. Image-release permissions and SSH syntax remain
+unchanged; interrupted/stopped prompts never count as acceptance.
 
 ## Administrator installation and cutover
 
