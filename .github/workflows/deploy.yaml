@@ -2,7 +2,7 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
-    paths: [".github/**", "docker-compose.stack.yaml", "postgres/**", "redis/**", "docker-proxy/**", "deploy/**"]
+    paths: [".github/**", "docker-compose.stack.yaml", "postgres/**", "redis/**", "docker-proxy/**", "deploy/**", "monitoring/collectors/**"]
   workflow_dispatch:
 permissions:
   contents: read

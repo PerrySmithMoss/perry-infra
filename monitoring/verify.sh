@@ -48,4 +48,4 @@ fi
 systemctl show netdata.service -p MemoryCurrent -p TasksCurrent
 free -h
 df -h /
-echo 'Still verify externally: port blocked, nine container charts, and real alert emails.'
+echo 'Still verify externally: port blocked, all current Swarm container charts, and real alert emails.'

@@ -27,7 +27,7 @@ verification in production; configuration alone is not evidence of coverage.
   [UptimeRobot monitor](https://dashboard.uptimerobot.com/monitors/804640428)
   reports Up with a five-minute interval and owner email alerts enabled.
 
-- [ ] **Configure private PostgreSQL metrics collection in Netdata.**
+- [x] **Configure private PostgreSQL metrics collection in Netdata.**
   Design a private connection path from the host agent to the Swarm service;
   PostgreSQL currently has no published port. Use a dedicated non-superuser
   monitoring role with only required permissions and appropriate TLS. Store
@@ -35,6 +35,14 @@ verification in production; configuration alone is not evidence of coverage.
   database administrator credentials intact. Verify connection, transaction,
   and lock/deadlock metrics and relevant alerts without disrupting applications.
   Document configuration, credential rotation, and rollback.
+  Completed in production on 2026-11-12. The administrator-installed snapshot
+  provides a separate encrypted overlay and host-only relay, with TLS
+  `verify-full`, a dedicated non-superuser `pg_monitor` login and restricted HBA.
+  Privileged checks passed role limits, the live TLS session and repeated numeric
+  connection, transaction, held/waiting-lock and deadlock samples. These charts
+  were also verified in Cloud; connection, lock and deadlock alerts were running
+  and Clear. Application/admin credentials and data are retained. See the
+  [configuration, rotation, rollback and rollout incident record](../monitoring/collectors/README.md).
 
 - [x] **Move Redis into perry-infra as shared infrastructure.**
   Migrate `im-listening_redis` from `PerrySmithMoss/im-listening` into the
@@ -76,20 +84,37 @@ verification in production; configuration alone is not evidence of coverage.
   See [the cutover/rotation/rollback runbook](../redis/README.md). Disposable AOF
   preservation tests and the Redis high/critical vulnerability scan also passed.
 
-- [ ] **Configure private Redis metrics collection in Netdata.**
+- [x] **Configure private Redis metrics collection in Netdata.**
   Shared Redis is now `perry-infra_redis`, reached by approved applications over
   the private encrypted `redis_clients` overlay. Provide a private collector path and a
   dedicated ACL with only commands required by the collector. Keep Redis off public ports and
   credentials out of Git. Verify memory, evictions, connections, and hit/miss
   metrics, then document configuration, credential rotation, and rollback.
+  Completed in production on 2026-11-12. A separate encrypted monitoring overlay
+  and host-only relay use a dedicated ACL for INFO/PING and the client's required
+  handshake commands. Privileged checks passed authentication, key/enumeration/
+  config/slowlog/Lua denials and numeric memory, eviction, connection and hit/miss
+  evidence. Cloud showed memory, clients, hit rate and zero evictions; the memory
+  and eviction alerts were running and Clear. Existing application ACLs, data,
+  AOF and noeviction policy are preserved. See the
+  [configuration, rotation, rollback and rollout incident record](../monitoring/collectors/README.md).
 
-- [ ] **Configure private Traefik request metrics in Netdata.**
+- [x] **Configure private Traefik request metrics in Netdata.**
   Enable a dedicated private metrics entrypoint and a collector connection path
   through an administrator-reviewed infrastructure change. Do not expose the
   Traefik API/dashboard or metrics publicly, broaden the Docker socket proxy
   ACL, or bypass the existing snapshot approval boundary. Verify request counts,
   latency, and 5xx metrics per service where supported. Document alert settings,
   deployment verification, and rollback.
+  Completed in production on 2026-11-12 through the administrator-installed
+  snapshot. The dedicated metrics entrypoint permits only its monitoring overlay;
+  no metrics/API/dashboard port is published and the Docker proxy ACL is unchanged.
+  Native entrypoint and Prometheus service-labelled request/latency charts were
+  verified in Cloud for all five application services. Controlled 5xx export was
+  verified on a disposable backend; production 5xx was not deliberately induced.
+  The 5xx alert was running and Clear. External port and public metrics-path
+  checks passed, as did all five health endpoints. See the
+  [alert settings, deployment verification and rollback runbook](../monitoring/collectors/README.md).
 
 - [x] **Verify Netdata outage and recovery email delivery.**
   Verified on 2026-11-11: the owner stopped only Netdata and received the Cloud

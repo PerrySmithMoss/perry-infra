@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
-image=$(awk '/image: haproxy:/{print $2}' docker-compose.stack.yaml)
+image=$(awk '$1 == "docker-socket-proxy:" { proxy = 1; next } proxy && $1 == "image:" { print $2; exit }' docker-compose.stack.yaml)
 name="bulkbets-proxy-test-$$"
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
 # Only discovery reaches the local test daemon; no host paths except its socket.

@@ -31,17 +31,22 @@ func snapshotFixture(t *testing.T) (string, map[string]string) {
 		"docker-proxy/haproxy.cfg":  "",
 		"redis/redis.conf":          "aclfile /run/secrets/redis_users\n",
 	}
+	for _, name := range snapshotFiles {
+		if _, ok := files[name]; !ok {
+			files[name] = "fixture for " + name + "\n"
+		}
+	}
 	for name, contents := range files {
 		writeFixture(t, root, name, contents)
 	}
 	return root, files
 }
 
-func TestFingerprintIncludesRedisConfiguration(t *testing.T) {
+func TestFingerprintIncludesAllRuntimeConfiguration(t *testing.T) {
 	root, files := snapshotFixture(t)
 
-	// SHA256 of the ordered name/NUL/content/NUL format, including Redis.
-	const want = "f6dfdee023f3471a0566b830cd520a3bf11265d5412a0331d3fdf69e24304faf"
+	// SHA256 of the ordered name/NUL/content/NUL format, including collector paths.
+	const want = "156a9950a5427c11f50f351296d89c8db3d5faa56bcaad37ebdccd407c89bda2"
 	if got, err := fingerprint(root); err != nil || got != want {
 		t.Fatalf("fingerprint = %q, %v, want %q", got, err, want)
 	}

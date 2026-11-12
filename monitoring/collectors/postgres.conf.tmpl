@@ -1,0 +1,11 @@
+# Managed by perry-infra/monitoring/collectors. Contains a private credential.
+jobs:
+  - name: private
+    update_every: 5
+    autodetection_retry: 30
+    dsn: 'postgres://netdata_monitor:{{PASSWORD}}@perry-infra_postgres:15432/postgres?sslmode=verify-full&sslrootcert=/etc/netdata/private-metrics-ca.crt&connect_timeout=3&application_name=netdata'
+    timeout: 3
+    collect_databases_matching: ''
+    functions:
+      top_queries:
+        disabled: true

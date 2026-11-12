@@ -3,8 +3,10 @@
 This is administrator-managed **host configuration**, outside the Swarm stack.
 The existing `infra-release` broker/key is not allowed to install host packages.
 Do not broaden that account, the Docker socket proxy ACL, application overlays,
-or database exposure to deploy monitoring. No monitoring port or Traefik router
-is added. The repository is public: never commit claim.conf, tokens, Cloud keys,
+or database exposure to deploy monitoring. The base agent adds no listener;
+the optional [private service collectors](collectors/README.md) add only host
+loopback sockets and a source-restricted private Traefik metrics router through
+a separate administrator-reviewed snapshot. The repository is public: never commit claim.conf, tokens, Cloud keys,
 SMTP passwords, database credentials, or backups.
 
 ## Deployment status and prerequisites
@@ -97,7 +99,8 @@ Expected: connection refused or timeout. Also test the VPS public IPv6 address i
 it has one. Dashboard access should work only through https://app.netdata.cloud/.
 Test on mobile data to confirm remote access independently of the home network.
 
-Check host CPU/memory/disk charts plus each of the nine Swarm containers, including
+Check host CPU/memory/disk charts plus every Swarm container (ten with the private
+metrics relay installed), including
 CPU throttling. Container churn after deployment is expected. Resource charts do
 not establish desired-vs-running Swarm replicas. Over 24-48 hours, compare:
 
@@ -173,24 +176,18 @@ For an end-to-end down/up test, use a temporary test monitor: start with a healt
 URL, change it to a verified failing URL, receive the down email, restore the
 healthy URL, and receive recovery. Do not stop production services for this test.
 
-## Deeper service metrics (separate follow-up)
+## Private service metrics
 
 Host/container CPU/RAM metrics work without app code changes. Do not assume that
 means request latency, Go goroutines, Node event-loop lag, PostgreSQL internals,
 or Redis evictions are collected.
 
-- PostgreSQL is reachable only on private overlays. Plan a narrowly scoped
-  collector connection and dedicated non-superuser monitoring role (`pg_monitor`
-  plus only the access the chosen collector needs), with TLS as appropriate.
-  Do not use the shared admin password or publish port 5432. Table/index metrics
-  may require extra privileges/connections; review before enabling.
-- Shared Redis is owned by perry-infra; follow the [migration runbook](../redis/README.md)
-  and verify the production cutover before changing collection. Configure a separate
-  collector ACL with only required commands and an administrator-reviewed private
-  connection path. Do not reuse application/admin credentials or expose 6379 publicly.
-- Traefik currently has no metrics endpoint. A later change can enable a dedicated
-  private metrics entrypoint and collector path, reviewed with the Swarm snapshot.
-  Do not expose the API/dashboard or put it on the public web entrypoints.
+Follow the [collector installation, verification, rotation and rollback runbook](collectors/README.md).
+It configures PostgreSQL with a non-superuser monitoring role and TLS `verify-full`,
+Redis with a dedicated metrics-only ACL, and Traefik entrypoint and per-service
+request/latency/status-code metrics. Configuration in Git does not prove these
+collectors have been installed or verified in production; see [tasks](../docs/tasks.md).
+
 - The existing HAProxy proxy intentionally denies `/containers` requests. Keep it
   restricted for Traefik. Netdata uses host cgroups for container resources; any
   extra Docker API access needed for names/health must be evaluated separately.
@@ -198,10 +195,22 @@ or Redis evictions are collected.
 
 ## Maintenance and rollback
 
+Run the monitoring tests with Go 1.27.3, matching the deployment brokers:
+
+```sh
+go -C monitoring test -race ./...
+go -C monitoring vet ./...
+```
+
+The tests exercise the startup guard and runtime verification using temporary
+configuration files and Go command stubs; they require no root access or running
+Netdata service.
+
 Check stable update status per Netdata's updater documentation. This host package
 is not covered by the repo's container-image Trivy scans. The CI monitoring checks
 validate scripts/configuration only; they neither install on the VPS nor touch
-Cloud accounts. monitoring/** is not added to the Swarm deployment trigger.
+Cloud accounts. Changes under monitoring/collectors/** trigger the snapshot-gated
+Swarm workflow; the base host installation remains administrator-managed.
 
 To revert a configuration change, stop Netdata, restore the prior `netdata.conf`,
 startup guard and drop-in from the printed root-only backup, run
@@ -220,8 +229,9 @@ you choose whether to reinstall, remove packages, or archive local history. Stop
 Netdata before handling its data. Cloud identity files and claim.conf are secrets:
 back them up only to encrypted/private storage; do not attach them to issues.
 
-The existing infrastructure broker, SSH policy, Swarm manifests, networking and
-PostgreSQL data volume are unchanged by these scripts.
+The base host installation leaves Swarm untouched. The optional private collectors
+require a separately reviewed snapshot and preserve application data volumes,
+release-account privileges and the Docker API proxy ACL.
 
 ## Sources
 

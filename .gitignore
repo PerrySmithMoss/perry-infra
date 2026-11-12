@@ -10,3 +10,4 @@ redis/*.secret
 redis/*.env
 redis/credentials/
 perry-infra-release
+perry-metrics-admin

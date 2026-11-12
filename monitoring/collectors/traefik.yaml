@@ -1,0 +1,11 @@
+http:
+  routers:
+    private-metrics:
+      entryPoints: [metrics]
+      rule: Path(`/metrics`)
+      service: prometheus@internal
+      middlewares: [metrics-source]
+  middlewares:
+    metrics-source:
+      ipAllowList:
+        sourceRange: [10.42.22.0/24]

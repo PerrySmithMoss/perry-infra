@@ -13,18 +13,19 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Validate host monitoring configuration and startup guard
-        run: |
-          for script in monitoring/install.sh monitoring/check-config.sh monitoring/verify.sh; do sh -n "$script"; done
-          bash -n monitoring/claim.sh
-          python3 -m unittest discover -s monitoring -p 'test_*.py' -v
-          shellcheck monitoring/*.sh
-      - name: Check Docker API restrictions
-        run: sh docker-proxy/test.sh
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: deploy/portfolio/go.mod
           cache: false
+      - name: Validate host monitoring configuration and startup guard
+        run: |
+          for script in monitoring/install.sh monitoring/check-config.sh monitoring/verify.sh; do sh -n "$script"; done
+          bash -n monitoring/claim.sh
+          go -C monitoring test -race ./...
+          go -C monitoring vet ./...
+          shellcheck monitoring/*.sh
+      - name: Check Docker API restrictions
+        run: sh docker-proxy/test.sh
       - name: Verify shared Redis ACLs and persistence with deployed app clients
         run: |
           go -C redis test -race ./...
@@ -37,6 +38,10 @@ jobs:
           go -C deploy/infrastructure test -race ./...
           go -C deploy/infrastructure vet ./...
           sh -n deploy/install.sh
+      - name: Check private metrics tooling and relay boundaries
+        run: |
+          METRICS_DOCKER_TEST=1 go -C monitoring/collectors test -race ./...
+          go -C monitoring/collectors vet ./...
       - name: Test portfolio release policy
         run: |
           go -C deploy/portfolio test -race ./...
