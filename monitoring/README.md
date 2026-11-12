@@ -198,6 +198,17 @@ or Redis evictions are collected.
 
 ## Maintenance and rollback
 
+Run the monitoring tests with Go 1.27.3, matching the deployment brokers:
+
+```sh
+go -C monitoring test -race ./...
+go -C monitoring vet ./...
+```
+
+The tests exercise the startup guard and runtime verification using temporary
+configuration files and Go command stubs; they require no root access or running
+Netdata service.
+
 Check stable update status per Netdata's updater documentation. This host package
 is not covered by the repo's container-image Trivy scans. The CI monitoring checks
 validate scripts/configuration only; they neither install on the VPS nor touch
