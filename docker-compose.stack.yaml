@@ -10,7 +10,6 @@ services:
       - "--providers.swarm=true" 
       - "--providers.swarm.exposedByDefault=false"
       - "--providers.swarm.endpoint=tcp://docker-socket-proxy:2375"
-      - "--providers.swarm.network=portfolio_network" 
 
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
@@ -46,7 +45,10 @@ services:
         max_attempts: 3
         window: 60s
     networks:
-      - portfolio_network
+      - chinwag_ingress
+      - fleet_ingress
+      - im_listening_ingress
+      - vita_track_ingress
       - docker_control
       - bulkbets_ingress
       - traefik_metrics
@@ -91,7 +93,7 @@ services:
     secrets:
       - {source: redis_users_metrics_v2, target: redis_users, uid: "999", gid: "1000", mode: 0400}
       - {source: redis_healthcheck_password_v1, target: redis_healthcheck_password, uid: "999", gid: "1000", mode: 0400}
-    networks: [redis_clients, redis_metrics]
+    networks: [im_listening_redis_clients, redis_metrics]
     volumes:
       - redis_data:/data
     read_only: true
@@ -132,7 +134,7 @@ services:
     image: ghcr.io/perrysmithmoss/perry-infra-postgres@sha256:6d79cb70e411a80ec759a5778b76c24ab7a0b9a5f97ab125acef24ef77e76f12
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/run/secrets/bulkbets_db_cert, -c, ssl_key_file=/run/secrets/bulkbets_db_key, -c, hba_file=/etc/postgresql/pg_hba.conf]
     configs:
-      - source: postgres_hba_metrics_v2
+      - source: postgres_hba_isolation_v3
         target: /etc/postgresql/pg_hba.conf
     secrets:
       - source: bulkbets_db_key
@@ -164,7 +166,9 @@ services:
         max_attempts: 3
         window: 60s
     networks:
-      - portfolio_network
+      - chinwag_database
+      - im_listening_database
+      - vita_track_database
       - bulkbets_database
       - postgres_metrics
     volumes:
@@ -236,7 +240,21 @@ networks:
     driver_opts: {encrypted: ""}
     ipam:
       config: [{subnet: 10.42.22.0/24}]
-  redis_clients:
+  chinwag_ingress:
+    external: true
+  chinwag_database:
+    external: true
+  fleet_ingress:
+    external: true
+  im_listening_ingress:
+    external: true
+  im_listening_database:
+    external: true
+  im_listening_redis_clients:
+    external: true
+  vita_track_ingress:
+    external: true
+  vita_track_database:
     external: true
   bulkbets_ingress:
     external: true
@@ -245,9 +263,6 @@ networks:
   docker_control:
     driver: overlay
     internal: true
-  portfolio_network:
-    driver: overlay
-    external: true
 
 configs:
   metrics_relay_v1:
@@ -258,7 +273,7 @@ configs:
     file: ./redis/redis.conf
   docker_proxy:
     file: ./docker-proxy/haproxy.cfg
-  postgres_hba_metrics_v2:
+  postgres_hba_isolation_v3:
     file: ./postgres/pg_hba.conf
 
 secrets:

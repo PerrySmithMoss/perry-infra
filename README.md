@@ -20,7 +20,15 @@ Traefik accesses Docker through a private, internal `docker_control` overlay. Th
 socket proxy permits service/task/network/node discovery; container access,
 secrets/configs, and writes are denied. No Docker API port is published.
 
-Existing applications retain `portfolio_network`. BulkBets instead uses external,
+The installed snapshot isolates each application on its own ingress and,
+where needed, private database/Redis overlays. Production cutover and the full
+specification rollback drill passed on 2026-11-12. The
+[isolation and rollback runbook](deploy/isolation/README.md) coordinates all four
+application manifests, administrator-installed snapshots and image-only release
+policies. Protected CI release/rollback checks are in progress; old overlays stay
+retained until the owner ends the network rollback window.
+
+BulkBets continues to use external,
 non-attachable encrypted overlays `bulkbets_ingress` (10.42.10.0/24; Traefik/API) and
 `bulkbets_database` (10.42.11.0/24; PostgreSQL/API/migration jobs). Do not attach other
 applications to these networks or publish database ports.
@@ -34,8 +42,9 @@ Chinwag and VitaTrack use separate PostgreSQL roles that own their Prisma
 tables and have access to their respective application databases. The
 one-time ownership change is in `postgres/legacy-app-role.sql`. It also requires `bulkbets_db_cert` and
 `bulkbets_db_key` (key UID/GID 999, mode 0400). BulkBets clients use `bulkbets_db_ca`
-and TLS `verify-full`. HBA rules require TLS for BulkBets roles and reject their
-connections to other databases; legacy application rules are retained.
+and TLS `verify-full`. HBA rules require TLS for BulkBets and Im Listening roles.
+Chinwag, VitaTrack and Im Listening roles are restricted to their own database
+and private source subnet, before the retained administrator rules.
 
 Docker configs are immutable. When changing `postgres/pg_hba.conf` after deployment,
 version the config name in the stack before deploying. TLS secret rotations likewise

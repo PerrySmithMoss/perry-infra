@@ -5,6 +5,87 @@ with Cloud-only access. Track work here even when implementation belongs in an
 application repository. Completion requires
 verification in production; configuration alone is not evidence of coverage.
 
+- [ ] **Isolate application ingress and database networks.**
+  Migrate Chinwag, Fleet, Im Listening and VitaTrack off the shared
+  `portfolio_network`, following BulkBets's per-application network separation.
+  Inventory each app's actual dependencies first. Give each app an encrypted,
+  non-attachable ingress overlay shared only with Traefik, and a separate private
+  database overlay where needed, shared only with PostgreSQL, the app and its
+  approved migration jobs. Retain shared Traefik and PostgreSQL; explicitly select
+  each app's Traefik network and retain separate least-privilege database roles.
+  Review Redis connectivity as part of the isolation design: preserve per-app
+  ACLs and use per-app Redis overlays if a shared client overlay would retain
+  unwanted app-to-app reachability. Keep monitoring/control networks separate
+  and publish no database or Redis ports.
+  Coordinate app manifests and administrator-installed infrastructure snapshots,
+  including runtime configuration fingerprints, installation steps and reviewed
+  release-broker policies. Document expected downtime and rollback with retained
+  service specifications and data; migrate one app at a time. Remove each app's
+  old shared-network attachment after cutover, and retire the shared overlay only
+  after verifying that no required dependencies remain.
+  Before closing this task, verify in production that public HTTPS routing,
+  authentication, core application flows, database/migration access and applicable
+  Redis sessions/rate limits work; prove unauthorized cross-app network access
+  and cross-database/Redis access are denied. Confirm monitoring, restricted
+  image releases and rollback still work, and record the results for every app.
+  Implementation is prepared in the infrastructure and four application
+  checkouts; the owner started production preparation on 2026-11-12. Shared
+  service interfaces were added; the first health gate paused after Im Listening
+  exited cleanly following dependency restarts. The checked recovery restored
+  preparation. All four app network cutovers and drill functional checks have
+  passed and were accepted by the owner. Its retained
+  session, password/Google authentication, Spotify search/selection and Redis
+  HTTP rate limit/Retry-After/recovery passed; temporary Spotify search errors
+  recovered and are recorded in the runbook. Reusable controlled Chinwag,
+  VitaTrack and Im Listening accounts were created with credentials outside Git;
+  VitaTrack uses labelled synthetic records, and no Im Listening test post was
+  published. The drill initially paused during finalization after Im Listening's
+  clean-exit recovery failed to schedule a new task. The reviewed recovery build
+  now waits for Swarm task removal before restoring one replica; the owner ran
+  it successfully, retaining accepted checks and rollback inputs. Finalization
+  and final isolation verification passed. At `drill/monitoring`, all ten
+  services are 1/1, all five external monitors are Up, and Cloud PostgreSQL,
+  Redis and Traefik charts and relevant Clear alert evaluations were checked.
+  Repeated app/session flows passed with an external exception: Fleet's routing
+  provider returns HTTP 403 quota errors, so road snapping is degraded while
+  vehicles/SSE work. The owner proceeded with that issue recorded. The phase
+  runner then completed the automatic rollback and baseline verification. At
+  manual checkpoint 2/3 (`drill/restored-check`), original app networks, all ten
+  services, retained sessions/data, reconnects, all five monitors and fresh Cloud
+  collector samples/Clear alerts were checked. The owner accepted this baseline
+  and final preparation began. It paused when the recovery wait included retained
+  historical tasks as well as the completed task being replaced. The requested
+  replica count was restored; all ten services are 1/1 and all four application
+  HTTPS health endpoints return 200. The corrected helper waits for the specific
+  completed task and no live tasks/containers, preserving the exact service spec.
+  A disposable multi-task-history Swarm regression passes. Its guarded final
+  preparation handoff retains the accepted drill/baseline, cursor, phase mode
+  and both rollback inventories. The owner resumed it and reached manual
+  checkpoint 3/3 (`accept`) after final automatic cutovers/install/finalization
+  and verification. Final app/session/reconnect/protection checks passed,
+  including controlled two-way Chinwag messages, retained VitaTrack reads,
+  returning Google sign-in, Spotify and Redis rate-limit/Retry-After/recovery.
+  Fleet live updates/reconnect/search passed; its provider quota still returns
+  403 and road snapping remains an explicitly recorded exception. All ten
+  services are 1/1 on the reviewed app networks, all five HTTPS health routes
+  return 200, all five external monitors are Up, and fresh Cloud collector
+  samples/relevant Clear alerts were checked. The owner accepted the result and
+  the runner completed `finish`, recorded policies and cleared maintenance;
+  original rollback/audit
+  inputs are retained. Protected CI release/rollback and old-overlay retirement
+  evidence remain required before task closure. The
+  administrator helper offers a guided `run EXPECTED_FINGERPRINT` command with
+  a rollback drill, saved progress and automatic final policy/snapshot handling.
+  The reviewed phase-checkpoint update groups walkthroughs into the complete
+  drill result, restored baseline and final acceptance, retaining all automatic
+  checks and recording deferred checks honestly. It passed macOS/Linux race/vet
+  and regression checks, was adopted through `resume-phases`, and retained the
+  completed work and audit state. Production cutover acceptance is complete. The
+  [dependency inventory, staged cutover, downtime, rollback and per-app
+  verification record](../deploy/isolation/README.md) records completed drill
+  checks and the remaining production evidence. The proposed Im Listening Redis overlay is named
+  `im_listening_redis_clients`; it connects to the existing shared Redis service.
+
 - [x] **Add a public health endpoint for Chinwag and external monitoring.**
   Completed on 2026-11-11 in [Chinwag PR #7](https://github.com/PerrySmithMoss/chinwag/pull/7).
   Public `/healthz` supports GET/HEAD, returns 200 with minimal no-store JSON

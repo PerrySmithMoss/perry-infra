@@ -85,6 +85,10 @@ func deploy(expected string) error {
 }
 
 func deploySnapshot(root, lockName, expected string, timeout time.Duration) error {
+	return deploySnapshotMode(root, lockName, expected, timeout, false)
+}
+
+func deploySnapshotMode(root, lockName, expected string, timeout time.Duration, maintenance bool) error {
 	lock, err := os.OpenFile(lockName, os.O_CREATE|os.O_RDWR|syscall.O_NOFOLLOW, 0o600)
 	if err != nil {
 		return fmt.Errorf("open infrastructure release lock: %w", err)
@@ -92,6 +96,15 @@ func deploySnapshot(root, lockName, expected string, timeout time.Duration) erro
 	defer lock.Close()
 	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		return fmt.Errorf("acquire infrastructure release lock: %w", err)
+	}
+	// An administrator may be moving services between reviewed overlays. The
+	// installed snapshot must not undo an intermediate migration or rollback.
+	_, markerErr := os.Lstat(filepath.Join(root, "network-maintenance"))
+	if !maintenance && !os.IsNotExist(markerErr) {
+		return errors.New("administrator network maintenance is in progress")
+	}
+	if maintenance && markerErr != nil {
+		return errors.New("network finalization requires the administrator maintenance marker")
 	}
 	actual, err := fingerprint(root)
 	if err != nil || actual != expected {
@@ -128,6 +141,14 @@ func run(args []string) error {
 		return syscall.Exec("/usr/bin/sudo", command, []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin"})
 	case len(args) == 1 && digestRE.MatchString(args[0]):
 		return deploy(args[0])
+	case len(args) == 2 && args[0] == "network-finalize" && digestRE.MatchString(args[1]) && os.Geteuid() == 0:
+		// The SSH forced command and sudo rule accept only the single digest
+		// form, so this maintenance path is available only to administrators.
+		syscall.Umask(0o077)
+		return deploySnapshotMode(snapshot, lockPath, args[1], 15*time.Minute, true)
+	case len(args) == 1 && args[0] == "network-maintenance-check" && os.Geteuid() == 0:
+		_, err := os.Lstat(snapshot + "/network-maintenance")
+		return err
 	case len(args) == 2 && args[0] == "fingerprint":
 		value, err := fingerprint(args[1])
 		if err != nil {

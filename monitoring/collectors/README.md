@@ -14,6 +14,11 @@ The configuration is installed and production acceptance passed on 2026-11-12;
 the three [tasks](../../docs/tasks.md) are complete. Repeat the checks below after
 maintenance; configuration and disposable tests alone do not establish live coverage.
 
+The [application isolation migration](../../deploy/isolation/README.md) retains
+all three monitoring overlays, the relay, collector credentials and the Traefik
+metrics allowlist. Re-run this runbook's host/Cloud verification after its shared
+service restarts; its production acceptance is separate and remains pending.
+
 Prepared and tested on 2026-11-12: Go unit/race/vet and shell checks passed;
 disposable PostgreSQL TLS/HBA/role, Redis Unix-relay/ACL and Traefik source
 isolation/5xx checks passed with repeated numeric samples from all four actual
