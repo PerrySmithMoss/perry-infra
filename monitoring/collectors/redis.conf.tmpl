@@ -1,0 +1,10 @@
+# Managed by perry-infra/monitoring/collectors. Contains a private credential.
+jobs:
+  - name: private
+    update_every: 5
+    autodetection_retry: 30
+    address: 'redis://netdata:{{PASSWORD}}@127.0.0.1:16379/0'
+    timeout: 2
+    functions:
+      top_queries:
+        disabled: true

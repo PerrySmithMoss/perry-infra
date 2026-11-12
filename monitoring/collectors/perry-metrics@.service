@@ -1,0 +1,17 @@
+[Unit]
+Description=Private metrics socket relay %i
+Requires=perry-metrics@%i.socket
+After=perry-metrics@%i.socket
+
+[Service]
+User=netdata
+Group=netdata
+ExecStart=/lib/systemd/systemd-socket-proxyd /run/perry-metrics/%i.sock
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+MemoryMax=24M
+TasksMax=8

@@ -24,13 +24,22 @@ const (
 )
 
 var (
-	digestRE = regexp.MustCompile(`^[0-9a-f]{64}$`)
-	emailRE  = regexp.MustCompile(`^[A-Za-z0-9_.+@-]+$`)
+	digestRE      = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	emailRE       = regexp.MustCompile(`^[A-Za-z0-9_.+@-]+$`)
+	snapshotFiles = []string{
+		"docker-compose.stack.yaml", "postgres/pg_hba.conf", "docker-proxy/haproxy.cfg", "redis/redis.conf",
+		"monitoring/collectors/haproxy.cfg", "monitoring/collectors/traefik.yaml",
+		"monitoring/collectors/postgres.conf.tmpl", "monitoring/collectors/redis.conf.tmpl",
+		"monitoring/collectors/traefik.conf", "monitoring/collectors/prometheus.conf",
+		"monitoring/collectors/health.conf", "monitoring/collectors/perry-metrics@.socket",
+		"monitoring/collectors/perry-metrics@.service", "monitoring/collectors/tmpfiles.conf",
+		"postgres/tls/ca.crt",
+	}
 )
 
 func fingerprint(root string) (string, error) {
 	hash := sha256.New()
-	for _, name := range []string{"docker-compose.stack.yaml", "postgres/pg_hba.conf", "docker-proxy/haproxy.cfg", "redis/redis.conf"} {
+	for _, name := range snapshotFiles {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			return "", err

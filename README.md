@@ -69,3 +69,9 @@ must precede deploying the application's shared-Redis manifest.
 from Swarm releases: Cloud-only dashboard access, administrator installation,
 private claim-token entry, safety checks, personal email alert setup, and an
 external API-check inventory. The infra-release CI account gains no host access.
+
+[Private service collectors](monitoring/collectors/README.md) add PostgreSQL,
+Redis and Traefik metrics through administrator-managed loopback/Unix socket
+relays and separate encrypted overlays. Install the matching snapshot before
+deploying this manifest; it requires the new versioned Redis ACL secret and host
+socket directory. Application data and administrator credentials are retained.

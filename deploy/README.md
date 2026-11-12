@@ -70,6 +70,15 @@ Redis snapshot: the old server must be stopped before the shared service mounts
 its volume. The application broker's recorded spec must then be refreshed for
 its changed network and URL secret. No release account gains new host access.
 
+The [private metrics rollout](../monitoring/collectors/README.md) adds a stateless
+HAProxy Unix socket relay, three internal encrypted overlays, versioned PostgreSQL
+HBA/Traefik configs and a versioned Redis ACL secret. The fingerprint and installer
+include every collector template, host socket unit, alert file and public CA.
+CI can deploy only the administrator-installed snapshot; it cannot install the
+host units, create credentials or refresh the snapshot. Use the administrator
+metrics installer for the first rollout, which prepares those prerequisites
+before invoking this installer and the restricted broker.
+
 ## Portfolio application releases
 
 See [the restricted portfolio release runbook](portfolio/README.md) for the

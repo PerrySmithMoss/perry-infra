@@ -44,3 +44,27 @@ func TestRotationOverlapsAndRetiresOneUsersPassword(t *testing.T) {
 		}
 	}
 }
+
+func TestMonitoringRotationPreservesRestrictedCommands(t *testing.T) {
+	root := t.TempDir()
+	secret := strings.Repeat("a", 64)
+	acl := fmt.Sprintf("user app on #other-hash ~app:* +get\nuser netdata reset on #%x resetkeys resetchannels -@all +ping +info +hello +client|setinfo\n", sha256.Sum256([]byte(secret)))
+	aclPath, urlPath := filepath.Join(root, "users.acl"), filepath.Join(root, "url")
+	if err := os.WriteFile(aclPath, []byte(acl), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(urlPath, []byte("redis://netdata:"+secret+"@perry-infra_redis:6379/0"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	rotated, retired := filepath.Join(root, "rotated"), filepath.Join(root, "retired")
+	if err := rotate("netdata", aclPath, urlPath, rotated, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := rotate("netdata", filepath.Join(rotated, "users.acl"), filepath.Join(rotated, "url"), retired, true); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(filepath.Join(retired, "users.acl"))
+	if err != nil || !strings.Contains(string(after), "user app on #other-hash ~app:* +get\n") || !strings.Contains(string(after), "resetkeys resetchannels -@all +ping +info +hello +client|setinfo") || strings.Contains(string(after), fmt.Sprintf("#%x", sha256.Sum256([]byte(secret)))) {
+		t.Fatal("monitoring rotation changed access or retained the retired hash")
+	}
+}

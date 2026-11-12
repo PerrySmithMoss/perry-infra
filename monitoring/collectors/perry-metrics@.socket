@@ -1,0 +1,10 @@
+[Unit]
+Description=Private metrics loopback endpoint %i
+
+[Socket]
+ListenStream=127.0.0.1:%i
+NoDelay=true
+Backlog=32
+
+[Install]
+WantedBy=sockets.target

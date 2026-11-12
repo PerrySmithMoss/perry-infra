@@ -15,7 +15,7 @@ import (
 // rotate preserves all other users and adds a second password hash. retire keeps
 // only the password from URL_FILE after the new credential is verified in use.
 func rotate(user, aclPath, urlPath, directory string, retire bool) error {
-	if user != "im_listening" && user != "infra_probe" && user != "admin" {
+	if user != "im_listening" && user != "infra_probe" && user != "admin" && user != "netdata" {
 		return errors.New("rotation requires a named application/admin URL user")
 	}
 	acl, err := os.ReadFile(aclPath)

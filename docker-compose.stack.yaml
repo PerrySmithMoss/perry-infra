@@ -17,6 +17,14 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entryPoints.websecure.address=:443"
 
+      - "--entrypoints.metrics.address=:8082"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=metrics"
+      - "--metrics.prometheus.manualrouting=true"
+      - "--metrics.prometheus.addserviceslabels=true"
+      - "--metrics.prometheus.addrouterslabels=false"
+      - "--providers.file.filename=/etc/traefik/metrics.yaml"
+
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
@@ -41,6 +49,9 @@ services:
       - portfolio_network
       - docker_control
       - bulkbets_ingress
+      - traefik_metrics
+    configs:
+      - {source: traefik_metrics_v1, target: /etc/traefik/metrics.yaml}
     read_only: true
     cap_drop: [ALL]
     logging:
@@ -78,9 +89,9 @@ services:
     configs:
       - {source: redis_shared_v1, target: /etc/redis/redis.conf}
     secrets:
-      - {source: redis_users_v1, target: redis_users, uid: "999", gid: "1000", mode: 0400}
+      - {source: redis_users_metrics_v2, target: redis_users, uid: "999", gid: "1000", mode: 0400}
       - {source: redis_healthcheck_password_v1, target: redis_healthcheck_password, uid: "999", gid: "1000", mode: 0400}
-    networks: [redis_clients]
+    networks: [redis_clients, redis_metrics]
     volumes:
       - redis_data:/data
     read_only: true
@@ -121,7 +132,7 @@ services:
     image: ghcr.io/perrysmithmoss/perry-infra-postgres@sha256:6d79cb70e411a80ec759a5778b76c24ab7a0b9a5f97ab125acef24ef77e76f12
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/run/secrets/bulkbets_db_cert, -c, ssl_key_file=/run/secrets/bulkbets_db_key, -c, hba_file=/etc/postgresql/pg_hba.conf]
     configs:
-      - source: postgres_hba
+      - source: postgres_hba_metrics_v2
         target: /etc/postgresql/pg_hba.conf
     secrets:
       - source: bulkbets_db_key
@@ -155,6 +166,7 @@ services:
     networks:
       - portfolio_network
       - bulkbets_database
+      - postgres_metrics
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - type: tmpfs
@@ -163,6 +175,35 @@ services:
       - type: tmpfs
         target: /tmp
         tmpfs: {size: 67108864, mode: 01777}
+
+  # Administrator-created host directory contains only relay sockets. No Docker
+  # API, database data, application overlay or published TCP port is available.
+  metrics-relay:
+    image: haproxy:3.4.7-alpine@sha256:2caaf8b1a1ef67f3f1ea9b721f2821675d3ba4500fb518e23884fecb93e8dbaa
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    configs:
+      - {source: metrics_relay_v1, target: /usr/local/etc/haproxy/haproxy.cfg}
+    volumes:
+      - type: bind
+        source: /run/perry-metrics
+        target: /run/perry-metrics
+    networks: [postgres_metrics, redis_metrics, traefik_metrics]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits: {memory: 32M, cpus: "0.10", pids: 32}
+      update_config:
+        order: stop-first
+        failure_action: rollback
+        monitor: 30s
+      restart_policy:
+        condition: any
 
 volumes:
   redis_data:
@@ -174,6 +215,27 @@ volumes:
   letsencrypt:
 
 networks:
+  postgres_metrics:
+    driver: overlay
+    internal: true
+    attachable: false
+    driver_opts: {encrypted: ""}
+    ipam:
+      config: [{subnet: 10.42.20.0/24}]
+  redis_metrics:
+    driver: overlay
+    internal: true
+    attachable: false
+    driver_opts: {encrypted: ""}
+    ipam:
+      config: [{subnet: 10.42.21.0/24}]
+  traefik_metrics:
+    driver: overlay
+    internal: true
+    attachable: false
+    driver_opts: {encrypted: ""}
+    ipam:
+      config: [{subnet: 10.42.22.0/24}]
   redis_clients:
     external: true
   bulkbets_ingress:
@@ -188,15 +250,19 @@ networks:
     external: true
 
 configs:
+  metrics_relay_v1:
+    file: ./monitoring/collectors/haproxy.cfg
+  traefik_metrics_v1:
+    file: ./monitoring/collectors/traefik.yaml
   redis_shared_v1:
     file: ./redis/redis.conf
   docker_proxy:
     file: ./docker-proxy/haproxy.cfg
-  postgres_hba:
+  postgres_hba_metrics_v2:
     file: ./postgres/pg_hba.conf
 
 secrets:
-  redis_users_v1:
+  redis_users_metrics_v2:
     external: true
   redis_healthcheck_password_v1:
     external: true
