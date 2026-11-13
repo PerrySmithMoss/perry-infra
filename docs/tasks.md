@@ -5,7 +5,7 @@ with Cloud-only access. Track work here even when implementation belongs in an
 application repository. Completion requires
 verification in production; configuration alone is not evidence of coverage.
 
-- [ ] **Isolate application ingress and database networks.**
+- [x] **Isolate application ingress and database networks.**
   Migrate Chinwag, Fleet, Im Listening and VitaTrack off the shared
   `portfolio_network`, following BulkBets's per-application network separation.
   Inventory each app's actual dependencies first. Give each app an encrypted,
@@ -48,11 +48,17 @@ verification in production; configuration alone is not evidence of coverage.
   either ID. At 10:28 UTC both old names and IDs were independently confirmed
   absent; no service or running task referenced them. All ten services remained
   1/1, all five health URLs returned 200, all external monitors were Up and
-  Netdata had no active alerts. **Remaining before closure:** run the standalone
-  sudo isolation verifier. A repeated removal attempt returned "network not
-  found" for both IDs and stopped before verification. Preserve all rollback
-  archives, images, configs, secrets, volumes and data; full specification
-  rollback is no longer available, while protected image rollback remains.
+  Netdata had no active alerts. The protected infrastructure deployment after
+  retirement passed, and the owner then ran the standalone sudo verifier
+  successfully on 2026-11-13. It confirmed encrypted overlays, exact service
+  memberships, selected Traefik networks, unpublished data ports, and all four
+  apps' final direct-IP denials and applicable database/migration/Redis checks.
+  Independent inspection at 10:50 UTC again found both old overlays absent and
+  all ten services 1/1. Production verification is complete and this task is
+  closed. Preserve all rollback archives, images, configs, secrets, volumes and
+  data; full specification rollback is no longer available, while protected
+  image rollback remains. Branch protection and Fleet's accepted provider-quota
+  exception are tracked separately below.
 
 - [ ] **Implement consistent branch protection across all VPS GitHub repositories.**
   Requested by the owner on 2026-11-13, expanding the Im Listening follow-up.

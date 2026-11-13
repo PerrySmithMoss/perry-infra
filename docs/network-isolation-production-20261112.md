@@ -143,14 +143,29 @@ the active `im_listening_redis_clients` overlay remained present. All service
 specifications and running containers still had their accepted memberships,
 all ten services were 1/1, and all five public HTTPS health URLs returned 200.
 The owner's repeated removal command also reported both IDs absent and exited
-before running the verifier because it used `set -e`. The standalone sudo
-isolation verifier is therefore still required before task closure.
+before running the verifier because it used `set -e`.
 
 The refreshed UptimeRobot dashboard showed 0 Down, 5 Up and 0 Paused. Netdata's
 Raised view reported no active alerts at 10:30:05 UTC, 70 rules were running,
 and all six PostgreSQL rule groups were Clear. Screenshots remain outside Git
 in the local `retirement` evidence directory. No application service restart or
 monitoring setting change was needed for retirement.
+
+The normal protected [post-retirement infrastructure deployment](https://github.com/PerrySmithMoss/perry-infra/actions/runs/43410724585)
+passed from commit `792cc6fbb7a27d68f17b1ac39901073104ac7446`, using the unchanged
+installed fingerprint and normal production-environment approval. Subsequent
+inspection still showed all ten services 1/1, all five health URLs returning
+200, unchanged running tasks and neither retired overlay recreated.
+
+After that deployment finished, the owner ran the standalone administrator
+verifier from the retained `perry-network-isolation-20261112-task-recovery.xmYblp`
+bundle. Its complete post-retirement verification passed on 2026-11-13:
+encrypted overlays, exact service memberships, explicit Traefik network selection,
+unpublished data ports, and final direct-IP denials and applicable
+database/migration/Redis checks for Fleet, Chinwag, VitaTrack and Im Listening. It ended
+with `Network administrator operation passed`. A separate inspection at
+10:50 UTC again confirmed both old overlays absent and all ten services 1/1.
+This completes the isolation task's production verification and closure.
 
 Removing the IDs ends automatic full specification rollback. Preserve the
 audit archives, retained images, configs, secrets, volumes and all application
