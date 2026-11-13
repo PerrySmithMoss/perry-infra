@@ -98,7 +98,7 @@ func TestDisposableCollectors(t *testing.T) {
 	docker("", "exec", seed, "chown", "999:999", "/fixtures/server.key")
 	docker("", "exec", seed, "chmod", "400", "/fixtures/server.key")
 	write("pg_hba.conf", strings.ReplaceAll(read("../../postgres/pg_hba.conf"), "10.42.20.0/24", subnet))
-	pg := start("postgres", "postgres:17.11-bookworm", []string{"--network-alias", "postgres", "--network-alias", "perry-infra_postgres", "--mount", "type=volume,source=" + volume + ",target=/fixtures,readonly", "-e", "POSTGRES_HOST_AUTH_METHOD=trust"}, []string{"postgres", "-c", "ssl=on", "-c", "ssl_cert_file=/fixtures/ca.crt", "-c", "ssl_key_file=/fixtures/server.key", "-c", "hba_file=/fixtures/pg_hba.conf"})
+	pg := start("postgres", "postgres:17-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536", []string{"--network-alias", "postgres", "--network-alias", "perry-infra_postgres", "--mount", "type=volume,source=" + volume + ",target=/fixtures,readonly", "-e", "POSTGRES_HOST_AUTH_METHOD=trust"}, []string{"postgres", "-c", "ssl=on", "-c", "ssl_cert_file=/fixtures/ca.crt", "-c", "ssl_key_file=/fixtures/server.key", "-c", "hba_file=/fixtures/pg_hba.conf"})
 	for attempt := 0; attempt < 40; attempt++ {
 		// initdb's temporary server accepts Unix sockets before the final server
 		// starts; require TCP so the subsequent psql cannot hit that restart gap.

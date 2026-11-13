@@ -33,16 +33,9 @@ docker exec "$container" openssl x509 -in /run/secrets/bulkbets_db_cert -noout -
 openssl x509 -in postgres/tls/server.crt -noout -fingerprint -sha256 -dates
 ```
 
-## PostgreSQL runtime candidate
+## PostgreSQL runtime verification
 
-The [candidate workflow](../../.github/workflows/postgres-candidate.yaml) builds
-and scans `postgres/Dockerfile` from a pinned stock base. This candidate removes
-the unused gosu helper from the runtime filesystem and runs as UID/GID 999.
-The smoke test initializes an isolated volume using the stock
-image, then verifies the candidate can read and write it without a change in
-server version, encoding, locale provider or collation version.
-
-Dispatch the workflow from `main` to publish the exact image that passed the
-smoke test and scan. Pin the resulting digest in the stack through a separate
-change, install the reviewed snapshot, and verify every database consumer
-after the protected infrastructure workflow deploys it.
+The stack uses the official PostgreSQL image pinned by digest. CI verifies
+disposable existing and fresh data with UID/GID 999, a read-only root filesystem,
+no capabilities and certificate-verified TLS. Custom builds and GHCR publishing
+have been retired. See the [runtime and residual risk record](../README.md).

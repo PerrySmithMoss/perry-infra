@@ -38,7 +38,7 @@ non-attachable encrypted overlays `bulkbets_ingress` (10.42.10.0/24; Traefik/API
 `bulkbets_database` (10.42.11.0/24; PostgreSQL/API/migration jobs). Do not attach other
 applications to these networks or publish database ports.
 
-PostgreSQL 17.11 uses `postgres_user` and the versioned
+The official PostgreSQL 17.12 Bookworm image, pinned by digest, uses `postgres_user` and the versioned
 `postgres_password_v2` secret, mounted at `/run/secrets/postgres_password`,
 with the existing `postgres_data` volume. Rotating the mounted secret does
 not change a password on an initialized database. Rotate the role in
@@ -65,9 +65,11 @@ The reverse proxies are Traefik 3.7.17 and HAProxy 3.4.7-alpine, pinned by diges
 write requests before deployments. Weekly/manual image scans retain full reports.
 PostgreSQL runs directly as UID 999 with a read-only root filesystem, bounded tmpfs
 mounts, and a 640 MiB memory limit. Its existing data volume must belong to UID 999.
-The pinned runtime image removes the unused gosu helper. Unfixed Debian library
-findings remain in the scan artifact. The PostgreSQL gate fails on fixable high
-or critical findings.
+The official image includes gosu, but its entrypoint skips that helper when
+started directly as UID 999. Full scan artifacts retain gosu and unfixed Debian
+findings; the PostgreSQL gate fails on fixable high or critical OS findings.
+The [runtime verification and residual risk record](postgres/README.md) describes
+the disposable minor-upgrade checks and outstanding package review.
 See BulkBets's `docs/security-remediation-2026-11-04.md` for reachability caveats and
 remaining administrator/plan access requirements.
 
