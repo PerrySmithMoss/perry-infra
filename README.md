@@ -25,8 +25,10 @@ where needed, private database/Redis overlays. Production cutover and the full
 specification rollback drill passed on 2026-11-12. The
 [isolation and rollback runbook](deploy/isolation/README.md) coordinates all four
 application manifests, administrator-installed snapshots and image-only release
-policies. Protected CI release/rollback checks are in progress; old overlays stay
-retained until the owner ends the network rollback window.
+policies. Protected CI release/rollback checks passed; the
+[production verification record](docs/network-isolation-production-20261112.md)
+contains the workflow links and image coordinates. Old overlays stay retained
+until the owner ends the network rollback window and an administrator retires them.
 
 BulkBets continues to use external,
 non-attachable encrypted overlays `bulkbets_ingress` (10.42.10.0/24; Traefik/API) and
