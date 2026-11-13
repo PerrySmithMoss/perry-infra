@@ -2,8 +2,9 @@
 
 The protected deployment completed successfully on 13 November 2026. The live
 Linux/amd64 database runs the official PostgreSQL 17.12 Bookworm image using the
-existing data volume. Application verification passed; the final administrator
-collector verification is pending.
+existing data volume. Application checks and the final administrator collector
+verification passed. The task is complete; residual package findings remain
+tracked below.
 
 ## Reviewed source and deployment
 
@@ -68,7 +69,11 @@ schema migration occurred.
 - **Private PostgreSQL monitoring:** the `netdata_monitor` role retained its
   limited non-superuser `pg_monitor` membership and connection limit of three.
   Its live `netdata` collector session reconnected over TLS after restart.
-  Administrator verification of repeated numeric collector samples is pending.
+  The administrator's verifier passed repeated numeric connection,
+  transaction, held/waiting-lock and deadlock samples, trusted-CA/hostname TLS,
+  role limits and private listener/overlay checks. Its Redis, Traefik and
+  Prometheus collector checks also passed. Private diagnostics remain root-only
+  on the VPS.
 
 The one Chinwag and two VitaTrack accounts created for these checks were
 removed by exact test email/username, including their cascading test records.

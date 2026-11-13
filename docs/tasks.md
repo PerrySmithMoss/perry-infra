@@ -8,14 +8,12 @@ Completion requires the production verification described by each task.
 
 ## Order for the remaining work
 
-1. Finish the administrator's PostgreSQL collector verification below.
-   The official 17.12 image deployed successfully on 13 November 2026.
-2. Restore Fleet road snapping and verify the provider response and route UI,
+1. Restore Fleet road snapping and verify the provider response and route UI,
    as tracked below.
 
 ## Switch to the official PostgreSQL 17 image
 
-**Deployed 13 November 2026; final collector verification pending.** Owner: infrastructure
+**Completed in production on 13 November 2026.** Owner: infrastructure
 maintainer. The owner chose to proceed with the official image for PostgreSQL
 security fixes and simpler maintenance after reviewing the higher package counts.
 The owner accepts a fresh database if needed and has authorized skipping backups.
@@ -83,22 +81,25 @@ engine security fixes and index rebuild considerations.
   [protected deployment](https://github.com/PerrySmithMoss/perry-infra/actions/runs/43435963349),
   which passed. Live PostgreSQL 17.12 retained the existing volume, database
   identifier, extensions and collation metadata.
-- [ ] Verify BulkBets health and market reads, Chinwag and VitaTrack authenticated
+- [x] Verify BulkBets health and market reads, Chinwag and VitaTrack authenticated
   flows, Im Listening database access and private PostgreSQL monitoring. Confirm
   each client's expected transport and role restrictions. Im Listening and
   monitoring now share this PostgreSQL service and require rollout checks too.
   All application flows, expected transports, role limits and cross-database
   denials passed; the live Netdata PostgreSQL session reconnected over TLS.
-  The administrator's numeric collector verification remains pending.
-- [ ] Record the deployment, app checks and residual findings. Assign unresolved
+  The administrator's verifier passed repeated numeric PostgreSQL samples,
+  trusted-CA/hostname TLS, monitoring role limits and private listener/overlay
+  boundaries. Redis, Traefik and Prometheus collector checks passed as well.
+- [x] Record the deployment, app checks and residual findings. Assign unresolved
   Debian findings an owner and next review date during the rollout review.
   The [runtime risk record](../postgres/README.md) assigns the infrastructure
   maintainer a review on 20 November 2026. Deployment and app results are in the
-  [production evidence](postgres-official-production-20261113.md); final collector
-  acceptance remains pending.
+  [production evidence](postgres-official-production-20261113.md), including the
+  final administrator collector verification. All ten services remain 1/1 and
+  all five public health endpoints returned 200 after test-account cleanup.
 
-Done when `perry-infra` pins the official digest on its default branch, the
-protected deployment and live consumer checks pass, obsolete custom-build
+Completed: `perry-infra` pins the official digest on its default branch, the
+protected deployment and live consumer checks passed, obsolete custom-build
 maintenance is retired, and residual package risks remain visibly tracked.
 
 ## Other infrastructure tasks
