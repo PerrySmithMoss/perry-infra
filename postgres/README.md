@@ -24,7 +24,7 @@ All fixture containers and volumes are disposable and cleaned up after the test.
 
 The required `scan` CI job runs these tests, application-role tests, private
 metrics checks and application isolation checks against the pinned official
-image. Full high/critical vulnerability reports, including gosu findings, are
+image. Full vulnerability reports across all severities, including gosu findings, are
 uploaded as `infrastructure-vulnerabilities`. The gate rejects fixable
 high/critical OS findings. A passing gate does not mean that the image is free
 of vulnerabilities.

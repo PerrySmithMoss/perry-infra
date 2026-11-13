@@ -81,7 +81,7 @@ jobs:
           awk '/    image:/{print $2}' docker-compose.stack.yaml | while IFS= read -r image; do
             name=${image##*/}
             name=${name%%[:@]*}
-            docker run --rm -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --severity HIGH,CRITICAL --format json --output "/reports/$name.json" "$image"
+            docker run --rm -v "$PWD/reports:/reports" -v trivy-cache:/root/.cache/trivy "$scanner" image --scanners vuln --format json --output "/reports/$name.json" "$image"
             case "$image" in
               postgres:*)
                 # Full report retained above. Debian-unfixed libraries and the
