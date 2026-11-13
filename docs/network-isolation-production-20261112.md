@@ -132,12 +132,17 @@ were also Clear. Screenshots are retained outside Git in the local
 ## Remaining closure conditions and recorded exception
 
 The old overlays `portfolio_network` (`7cemzepjcvuy1kwks3s8pqcbo`) and
-`redis_clients` (`kj9so10l4h424b5e6z5qmc53c`) have zero endpoints and no
-service or running-container attachments. They are retained until the owner
-explicitly ends the network rollback window. Then recheck the absence of
-attachments and retire only those two overlays as administrator. Removing their
-IDs ends automatic specification rollback. Preserve the audit archives, retained
-images, configs, secrets, volumes and all application data.
+`redis_clients` (`kj9so10l4h424b5e6z5qmc53c`) had zero endpoints and no
+service or running-task attachments at 10:07 UTC on 2026-11-13. The single
+Swarm node was Ready/Active and all ten services were 1/1. The owner authorized
+completing cleanup on 2026-11-13, ending the network rollback window. The exact
+administrator command to delete just these two IDs and rerun the full isolation
+verifier has been provided; sudo password authentication is still required.
+Deletion and post-retirement verification must be recorded before closing the
+isolation task. Removing the IDs ends automatic specification rollback.
+Preserve the audit archives, retained images, configs, secrets, volumes and all
+application data. Protected image rollback on the accepted topology remains
+available.
 
 Fleet's OpenRouteService quota response (HTTP 403) continues to degrade road
 snapping. Live updates, reconnect and vehicle search passed. The owner accepted
@@ -148,8 +153,10 @@ coordinate.
 
 A separate audit finding is that Im Listening's production environment restricts
 deployments to `master` and its SSH broker is image-only, but `master` has no
-branch protection or repository ruleset. The owner has been asked whether to
-apply the documented PR/passing-`verify`/administrator-enforcement baseline or
-record it as a separate hardening follow-up. On 2026-11-13 the owner chose to
-record the follow-up. Branch protection remains unchanged and is tracked as a
-separate task.
+branch protection or repository ruleset. On 2026-11-13 the owner chose to record
+this as a follow-up and then expanded it to consistent branch protection across
+all six VPS repositories: perry-infra, BulkBets, Chinwag, Fleet, Im Listening
+and VitaTrack. The separate task requires an effective-policy audit, required
+PRs/checks, administrator enforcement, blocked force-pushes/deletion, and
+per-repository enforcement and protected-release evidence. Branch protection
+remains unchanged. Fleet's quota exception is also tracked as a separate task.
