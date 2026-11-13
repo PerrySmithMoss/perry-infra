@@ -27,8 +27,11 @@ specification rollback drill passed on 2026-11-12. The
 application manifests, administrator-installed snapshots and image-only release
 policies. Protected CI release/rollback checks passed; the
 [production verification record](docs/network-isolation-production-20261112.md)
-contains the workflow links and image coordinates. Old overlays stay retained
-until the owner ends the network rollback window and an administrator retires them.
+contains the workflow links and image coordinates. The owner ended the network
+rollback window on 2026-11-13; both empty old overlays have been retired. Retain
+the audit archives and data. Automatic full specification rollback is now
+unavailable because the old network IDs are gone; protected image rollback on
+the accepted topology remains available.
 
 BulkBets continues to use external,
 non-attachable encrypted overlays `bulkbets_ingress` (10.42.10.0/24; Traefik/API) and

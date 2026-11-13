@@ -129,20 +129,32 @@ and per-database deadlocks; custom Redis memory/eviction and Traefik 5xx rules
 were also Clear. Screenshots are retained outside Git in the local
 `ci-release-rollback` evidence directory. Monitoring settings were unchanged.
 
-## Remaining closure conditions and recorded exception
+## Legacy overlay retirement and recorded exception
 
 The old overlays `portfolio_network` (`7cemzepjcvuy1kwks3s8pqcbo`) and
 `redis_clients` (`kj9so10l4h424b5e6z5qmc53c`) had zero endpoints and no
 service or running-task attachments at 10:07 UTC on 2026-11-13. The single
 Swarm node was Ready/Active and all ten services were 1/1. The owner authorized
-completing cleanup on 2026-11-13, ending the network rollback window. The exact
-administrator command to delete just these two IDs and rerun the full isolation
-verifier has been provided; sudo password authentication is still required.
-Deletion and post-retirement verification must be recorded before closing the
-isolation task. Removing the IDs ends automatic specification rollback.
-Preserve the audit archives, retained images, configs, secrets, volumes and all
-application data. Protected image rollback on the accepted topology remains
-available.
+completing cleanup on 2026-11-13, ending the network rollback window.
+
+At 10:28 UTC, a fresh network inventory confirmed that both old names and IDs
+were absent. Separate inspections of each exact ID returned "network not found";
+the active `im_listening_redis_clients` overlay remained present. All service
+specifications and running containers still had their accepted memberships,
+all ten services were 1/1, and all five public HTTPS health URLs returned 200.
+The owner's repeated removal command also reported both IDs absent and exited
+before running the verifier because it used `set -e`. The standalone sudo
+isolation verifier is therefore still required before task closure.
+
+The refreshed UptimeRobot dashboard showed 0 Down, 5 Up and 0 Paused. Netdata's
+Raised view reported no active alerts at 10:30:05 UTC, 70 rules were running,
+and all six PostgreSQL rule groups were Clear. Screenshots remain outside Git
+in the local `retirement` evidence directory. No application service restart or
+monitoring setting change was needed for retirement.
+
+Removing the IDs ends automatic full specification rollback. Preserve the
+audit archives, retained images, configs, secrets, volumes and all application
+data. Protected image rollback on the accepted topology remains available.
 
 Fleet's OpenRouteService quota response (HTTP 403) continues to degrade road
 snapping. Live updates, reconnect and vehicle search passed. The owner accepted

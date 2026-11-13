@@ -1,6 +1,6 @@
 # Application network isolation
 
-This is the coordinated implementation for the open isolation task in
+This is the coordinated implementation for the isolation task in
 [docs/tasks.md](../../docs/tasks.md). **The final isolated topology and combined
 application/monitoring checks have been verified and accepted. The runner
 completed `finish` successfully.** The rollback drill and restored baseline
@@ -13,9 +13,15 @@ previously diagnosed routing-provider quota issue remains open; road snapping
 is degraded while live vehicles/SSE work. The owner started the guided run on
 2026-11-12 and proceeded with that issue recorded. Original service
 specifications and installation are retained. Final acceptance, release-policy
-recording and maintenance removal completed. Protected CI release/rollback
-evidence and old-overlay retirement remain separate requirements for task
-closure.
+recording and maintenance removal completed. Protected application image
+release/rollback and infrastructure fingerprint checks passed; see the
+[production verification record](../../docs/network-isolation-production-20261112.md)
+for workflow links and image coordinates. The owner ended the network rollback
+window on 2026-11-13 and both old overlays are confirmed absent. The standalone
+post-retirement verifier remains the last closure check. Retained audit inputs
+are historical recovery evidence; automatic full specification rollback is no
+longer available because the old network IDs have been deleted. Protected image
+rollback on the accepted topology remains available.
 
 ### Final-preparation recovery (completed)
 
@@ -161,11 +167,13 @@ before starting another one. Existing manual migration state is never adopted
 or overwritten. The bundle directory, manifest and fingerprint must match when
 resuming.
 
-Successful guided completion is production cutover acceptance, not closure of
-the task: actual protected CI image/infrastructure releases and image rollbacks
-still need evidence, and old overlay retirement waits for the owner to end the
-rollback window. Neither overlay is automatically deleted. The detailed manual
-commands below remain available for administrator inspection and recovery.
+Successful guided completion is production cutover acceptance. Task closure
+also requires protected CI image/infrastructure release and image-rollback
+evidence, followed by old-overlay retirement after the owner ends the rollback
+window. The production record above tracks these checks. Neither overlay is
+automatically deleted by the guided runner. The commands below describe the
+original migration and rollback window; full specification rollback cannot run
+after the referenced network IDs have been retired.
 
 ## Reviewed dependencies and topology
 
