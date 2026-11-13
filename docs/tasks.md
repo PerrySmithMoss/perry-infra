@@ -1,9 +1,17 @@
 # Infrastructure tasks
 
-Tasks for shared infrastructure and monitoring, including Netdata Community
-with Cloud-only access. Track work here even when implementation belongs in an
-application repository. Completion requires
-verification in production; configuration alone is not evidence of coverage.
+Own shared VPS work here, including PostgreSQL, Redis, Swarm networks, release
+brokers, access controls and monitoring. Coordinate application changes here
+when they are required for an infrastructure rollout. Track application-only
+features and dependency remediation in the corresponding application repository.
+Completion requires the production verification described by each task.
+
+## Order for the remaining work
+
+1. Finish the protected PostgreSQL 17.12 deployment and live verification below.
+   The implementation merged in PR #31 on 13 November 2026.
+2. Restore Fleet road snapping and verify the provider response and route UI,
+   as tracked below.
 
 ## Switch to the official PostgreSQL 17 image
 
@@ -81,6 +89,15 @@ engine security fixes and index rebuild considerations.
 Done when `perry-infra` pins the official digest on its default branch, the
 protected deployment and live consumer checks pass, obsolete custom-build
 maintenance is retired, and residual package risks remain visibly tracked.
+
+## Other infrastructure tasks
+
+- [x] **Migrate the infrastructure release broker to Go.**
+  The protected production workflow passed through the installed Go broker on
+  9 November 2026. The port preserved the reviewed snapshot fingerprint and
+  included boundary tests. Subsequent network-isolation deployments also passed.
+  [PR #12](https://github.com/PerrySmithMoss/perry-infra/pull/12) ·
+  [Production run](https://github.com/PerrySmithMoss/perry-infra/actions/runs/42700548806)
 
 - [x] **Isolate application ingress and database networks.**
   Migrate Chinwag, Fleet, Im Listening and VitaTrack off the shared
