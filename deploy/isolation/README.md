@@ -1,6 +1,6 @@
 # Application network isolation
 
-This is the coordinated implementation for the open isolation task in
+This is the coordinated implementation for the isolation task in
 [docs/tasks.md](../../docs/tasks.md). **The final isolated topology and combined
 application/monitoring checks have been verified and accepted. The runner
 completed `finish` successfully.** The rollback drill and restored baseline
@@ -13,9 +13,15 @@ previously diagnosed routing-provider quota issue remains open; road snapping
 is degraded while live vehicles/SSE work. The owner started the guided run on
 2026-11-12 and proceeded with that issue recorded. Original service
 specifications and installation are retained. Final acceptance, release-policy
-recording and maintenance removal completed. Protected CI release/rollback
-evidence and old-overlay retirement remain separate requirements for task
-closure.
+recording and maintenance removal completed. Protected application image
+release/rollback and infrastructure fingerprint checks passed; see the
+[production verification record](../../docs/network-isolation-production-20261112.md)
+for workflow links and image coordinates. The owner ended the network rollback
+window on 2026-11-13 and both old overlays are confirmed absent. The standalone
+post-retirement verifier remains the last closure check. Retained audit inputs
+are historical recovery evidence; automatic full specification rollback is no
+longer available because the old network IDs have been deleted. Protected image
+rollback on the accepted topology remains available.
 
 ### Final-preparation recovery (completed)
 
@@ -161,11 +167,13 @@ before starting another one. Existing manual migration state is never adopted
 or overwritten. The bundle directory, manifest and fingerprint must match when
 resuming.
 
-Successful guided completion is production cutover acceptance, not closure of
-the task: actual protected CI image/infrastructure releases and image rollbacks
-still need evidence, and old overlay retirement waits for the owner to end the
-rollback window. Neither overlay is automatically deleted. The detailed manual
-commands below remain available for administrator inspection and recovery.
+Successful guided completion is production cutover acceptance. Task closure
+also requires protected CI image/infrastructure release and image-rollback
+evidence, followed by old-overlay retirement after the owner ends the rollback
+window. The production record above tracks these checks. Neither overlay is
+automatically deleted by the guided runner. The commands below describe the
+original migration and rollback window; full specification rollback cannot run
+after the referenced network IDs have been retired.
 
 ## Reviewed dependencies and topology
 
@@ -746,22 +754,25 @@ configuration or notification settings were changed. The combined checks passed
 with the previously accepted Fleet provider-quota exception explicitly retained.
 The owner subsequently entered `pass accept` and the runner completed final
 verification, recorded the reviewed image-release policies, cleared maintenance
-and reported successful completion. Protected CI release/rollback checks are
-now in progress; old overlays and both audit sets remain retained. No task
-checkbox is closed.
+and reported successful completion. Protected CI release/rollback checks
+subsequently passed on 2026-11-12/13, including all twelve application workflow
+runs and matching/stale infrastructure fingerprint checks. See the linked
+production record for the exact runs, digests and post-merge deployments.
+Both old overlays were confirmed absent on 2026-11-13; both audit sets remain
+retained. The standalone post-retirement verifier is the last closure check.
 
 | App | HTTPS, auth and core flow | Database/migrations and isolation | Redis | Monitoring, restricted release and rollback |
 | --- | --- | --- | --- | --- |
-| Fleet | Final live updates, reconnect, search and protection passed; ORS quota 403 still degrades road snapping (recorded exception) | Final automatic isolation verification passed; independently confirmed ingress-only membership | N/A | Final external Up and Cloud charts/Clear alerts checked; protected release/rollback evidence pending |
-| Chinwag | Final retained session, two controlled logins, two-way message delivery/persistence and automatic Socket.IO reconnect passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | Final external Up and Cloud checks passed; protected release/rollback evidence pending |
-| VitaTrack | Final retained session, activity/nutrition reads and GraphQL protection passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | Final external Up and Cloud checks passed; protected release/rollback evidence pending |
-| Im Listening | Final retained session, password/rejection/logout, returning Google sign-in, Spotify search and protection passed | Final automatic DB/migration/denial checks passed; independently confirmed three-overlay membership | Final private verification, session reloads, logout/replay and HTTP 429/Retry-After/recovery passed | Final external Up and Cloud charts/Clear alerts checked; protected release/rollback evidence pending |
+| Fleet | Final live updates, reconnect, search and protection passed; ORS quota 403 still degrades road snapping (recorded exception) | Final automatic isolation verification passed; independently confirmed ingress-only membership | N/A | External Up and Cloud charts/Clear alerts checked; protected image release, rollback and restore passed |
+| Chinwag | Final retained session, two controlled logins, two-way message delivery/persistence and automatic Socket.IO reconnect passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | External Up and Cloud checks passed; protected image release, rollback and restore passed |
+| VitaTrack | Final retained session, activity/nutrition reads and GraphQL protection passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | External Up and Cloud checks passed; protected image release, rollback and restore passed |
+| Im Listening | Final retained session, password/rejection/logout, returning Google sign-in, Spotify search and protection passed | Final automatic DB/migration/denial checks passed; independently confirmed three-overlay membership | Final private verification, session reloads, logout/replay and HTTP 429/Retry-After/recovery passed | External Up and Cloud charts/Clear alerts checked; protected image release, rollback and restore passed |
 
-Also record exact overlay membership/encryption/non-attachability, no published
-PostgreSQL/Redis ports or host listeners, all public monitor statuses, repeated
-numeric Netdata samples and alert recovery, current/rollback image digests and
-workflow runs, installed snapshot fingerprint, downtime and rollback-drill
-results. Only then close the task checkbox.
+The production record also contains overlay membership/encryption/non-attachability,
+unpublished PostgreSQL/Redis ports and external port denials, public monitor
+statuses, Netdata samples and alert recovery, current/rollback image digests and
+workflow runs, the installed fingerprint, and rollback-drill results. The task
+checkbox remains open until the standalone post-retirement verifier passes.
 
 Design references: [Docker Swarm networking](https://docs.docker.com/engine/swarm/networking/),
 [Traefik Swarm network selection](https://doc.traefik.io/traefik/v3.4/providers/swarm/),

@@ -45,10 +45,14 @@ verification in production; configuration alone is not evidence of coverage.
   On 2026-11-13 the owner authorized completing the remaining cleanup, ending
   the network rollback window. At 10:07 UTC both old overlays had zero endpoints;
   no service specification or running task on the single-node Swarm referenced
-  either ID. **Remaining before closure:** an administrator must retire only
-  these empty, unreferenced overlays and rerun verification. The exact sudo
-  command has been provided; password authentication remains with the owner.
-  Retain all rollback archives, images, configs, secrets, volumes and app data.
+  either ID. At 10:28 UTC both old names and IDs were independently confirmed
+  absent; no service or running task referenced them. All ten services remained
+  1/1, all five health URLs returned 200, all external monitors were Up and
+  Netdata had no active alerts. **Remaining before closure:** run the standalone
+  sudo isolation verifier. A repeated removal attempt returned "network not
+  found" for both IDs and stopped before verification. Preserve all rollback
+  archives, images, configs, secrets, volumes and data; full specification
+  rollback is no longer available, while protected image rollback remains.
 
 - [ ] **Implement consistent branch protection across all VPS GitHub repositories.**
   Requested by the owner on 2026-11-13, expanding the Im Listening follow-up.
@@ -68,7 +72,7 @@ verification in production; configuration alone is not evidence of coverage.
   retain the administrator-installed snapshot and restricted release brokers.
   Record the effective policy and enforcement evidence for every repository,
   including a green PR merge and its normal protected production release;
-  demonstrate rejected unreviewed/failing changes without disrupting the live
+  demonstrate rejected direct pushes and failing PRs without disrupting the live
   default branches. Close only after all VPS repositories have been verified.
   No repository protection settings were changed during the network cutover.
 
