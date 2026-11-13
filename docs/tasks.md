@@ -5,6 +5,83 @@ with Cloud-only access. Track work here even when implementation belongs in an
 application repository. Completion requires
 verification in production; configuration alone is not evidence of coverage.
 
+## Switch to the official PostgreSQL 17 image
+
+**High priority. Implementation in PR #31, 13 November 2026; production pending.** Owner: infrastructure
+maintainer. The owner chose to proceed with the official image for PostgreSQL
+security fixes and simpler maintenance after reviewing the higher package counts.
+The owner accepts a fresh database if needed and has authorized skipping backups.
+
+Use this tested image reference:
+
+```text
+postgres:17-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536
+```
+
+It resolves to PostgreSQL 17.12 on Linux/amd64, published on 12 November 2026.
+The architecture-specific manifest is
+`sha256:99d1a998c76487d3abb48b141505bda5dcf8089c0c4cd7be40f75de314fa32f0`.
+The [release notes](https://www.postgresql.org/docs/release/17.12/) describe the
+engine security fixes and index rebuild considerations.
+
+- [x] Verify the release and registry digest.
+- [x] Scan the exact image with Trivy 0.76.1 and a refreshed vulnerability
+  database. The 13 November scan reported 3 critical and 111 high OS entries,
+  plus 26 high/critical `gosu` entries. The deployed custom 17.11 image reported
+  2 critical and 101 high OS entries in the same scan comparison. The official
+  image passed the existing gate for OS findings with available fixes.
+- [x] Open disposable data initialized by the deployed 17.11 image on 17.12.
+  Verify preserved data, extensions, UTF-8, locale and collation metadata.
+  Fresh initialization, `citext` comparison and UUID generation also passed.
+- [x] Verify BulkBets provisioning, migrations, seed data and a runtime-role
+  TLS read. Test the deployed Chinwag and VitaTrack images against disposable
+  17.12 data. Registration, sign-in, messaging, nutrition/activity and VitaTrack
+  ownership checks passed. Certificate-verified connections and prohibited
+  cross-app/plaintext connection checks passed.
+- [x] Check live index types against the release notes. No GIN or GiST indexes
+  or unconstrained public `bpchar` columns were found in the six databases
+  inspected. BulkBets' currency code uses `character(3)`, which the release
+  notes exempt from the unconstrained `bpchar` issue.
+- [x] Create a focused PR pinning the tested official digest.
+  Check the latest branch and live snapshot before editing because network
+  isolation, monitoring and the Go release broker changed after the original
+  PostgreSQL rollout. Preserve those settings and runtime restrictions.
+  Replace the custom-image publishing and `test-no-gosu.sh` assumptions with
+  verification suitable for an official-image minor upgrade. Retain the previous
+  image for rollback until the new release is verified.
+  [PR #31](https://github.com/PerrySmithMoss/perry-infra/pull/31) pins the official
+  digest and replaces custom publishing with Go runtime checks. Local upgrade,
+  fresh initialization, TLS, role/isolation and private metrics checks passed.
+- [ ] Rerun relevant checks and the scan in CI and retain full reports with
+  the rollout evidence. The local assessment files are under
+  `/tmp/pg17-official-check.mIRmh42Q`; temporary files may be cleaned up.
+  Keep `gosu` findings visible and document that UID 999 startup skips it.
+  SQLite is restored by the official image and was absent from PostgreSQL's
+  observed linked libraries. Review the additional utility-package findings
+  and the remaining linked `libxml2` findings during PR review. A passing gate
+  alone is insufficient to close the vulnerability work.
+- [ ] Stage and verify the exact administrator-installed snapshot, merge after
+  required checks pass, and deploy through the protected production workflow.
+  The administrator enters any sudo password in their own terminal and approves
+  the production job. Reuse the current volume and verify the running digest,
+  database system identifier, extensions and collation after restart.
+  Staged at `/tmp/perry-postgres-official-20261113` on the VPS; the checkout and
+  staged fingerprint both equal
+  `862786146e57f5c336fef30c05f1af275b8f4de3808f562d4561db4ab04ec29a`.
+  Administrator installation and production deployment remain pending.
+- [ ] Verify BulkBets health and market reads, Chinwag and VitaTrack authenticated
+  flows, Im Listening database access and private PostgreSQL monitoring. Confirm
+  each client's expected transport and role restrictions. Im Listening and
+  monitoring now share this PostgreSQL service and require rollout checks too.
+- [ ] Record the deployment, app checks and residual findings. Assign unresolved
+  Debian findings an owner and next review date during the rollout review.
+  The [runtime risk record](../postgres/README.md) assigns the infrastructure
+  maintainer a review on 20 November 2026; deployment/app evidence is pending.
+
+Done when `perry-infra` pins the official digest on its default branch, the
+protected deployment and live consumer checks pass, obsolete custom-build
+maintenance is retired, and residual package risks remain visibly tracked.
+
 - [x] **Isolate application ingress and database networks.**
   Migrate Chinwag, Fleet, Im Listening and VitaTrack off the shared
   `portfolio_network`, following BulkBets's per-application network separation.

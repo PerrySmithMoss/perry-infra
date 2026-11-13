@@ -25,7 +25,7 @@ func TestDisposableIsolation(t *testing.T) {
 		t.Skip("set ISOLATION_DOCKER_TEST=1 with Docker")
 	}
 	prefix := "perry-isolation-test-" + time.Now().Format("150405.000000000")
-	pgImage := "postgres:17.11-bookworm"
+	pgImage := "postgres:17-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536"
 	redisImage := "redis:8.10.3-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80"
 	appImage := "ghcr.io/perrysmithmoss/im-listening-api@sha256:95f4699684cda0a48ddb15038aca3505d780395ee69658109f6bac13a3e564cb"
 	var containers, networks []string
