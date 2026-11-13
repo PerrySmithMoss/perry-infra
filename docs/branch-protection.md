@@ -4,8 +4,7 @@ The VPS release source is `main`. Its required policy is:
 
 - Changes enter through pull requests, including changes made by administrators.
 - Required checks: `scan`. The branch must be up to date.
-- GitHub Actions checks are bound to the GitHub Actions app (ID 15368).
-  The existing Vercel commit status uses its legacy context.
+- The required check is bound to the GitHub Actions app (ID 15368).
 - Force-pushes and branch deletion are blocked; conversations must be resolved.
 - No PR bypass actor is configured. The owner-operated baseline requires a PR
   and passing checks, with zero additional reviewer approvals.
