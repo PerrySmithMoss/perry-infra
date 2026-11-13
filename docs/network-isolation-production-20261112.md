@@ -178,12 +178,14 @@ as a successful road-snapping check. The app-configured provider probe repeated
 on 2026-11-13 also returned 403 with a quota error for one fixed public London
 coordinate.
 
-A separate audit finding is that Im Listening's production environment restricts
-deployments to `master` and its SSH broker is image-only, but `master` has no
+A separate cutover audit found that Im Listening's production environment restricted
+deployments to `master` and its SSH broker was image-only, but `master` had no
 branch protection or repository ruleset. On 2026-11-13 the owner chose to record
 this as a follow-up and then expanded it to consistent branch protection across
 all six VPS repositories: perry-infra, BulkBets, Chinwag, Fleet, Im Listening
 and VitaTrack. The separate task requires an effective-policy audit, required
 PRs/checks, administrator enforcement, blocked force-pushes/deletion, and
-per-repository enforcement and protected-release evidence. Branch protection
-remains unchanged. Fleet's quota exception is also tracked as a separate task.
+per-repository enforcement and protected-release evidence. Branch protection was
+unchanged during the cutover. The separate follow-up was subsequently completed
+on 2026-11-13; see the [six-repository verification record](vps-branch-protection-20261113.md).
+Fleet's quota exception remains a separate open task.

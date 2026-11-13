@@ -60,7 +60,7 @@ verification in production; configuration alone is not evidence of coverage.
   image rollback remains. Branch protection and Fleet's accepted provider-quota
   exception are tracked separately below.
 
-- [ ] **Implement consistent branch protection across all VPS GitHub repositories.**
+- [x] **Implement consistent branch protection across all VPS GitHub repositories.**
   Requested by the owner on 2026-11-13, expanding the Im Listening follow-up.
   Audit effective branch protection and repository/organization rulesets for
   `perry-infra` (`main`), `BulkBets` (`master`), `chinwag` (`master`),
@@ -73,7 +73,7 @@ verification in production; configuration alone is not evidence of coverage.
   bypass. Verify the exact check names on current PR runs before requiring them;
   Im Listening's documented baseline includes `verify`. Its production
   environment restricts deployments to `master` and its broker is image-only,
-  but its default branch currently has no protection or ruleset.
+  but its default branch had no protection or ruleset at the initial audit.
   Keep production environments restricted to the intended release branch and
   retain the administrator-installed snapshot and restricted release brokers.
   Record the effective policy and enforcement evidence for every repository,
@@ -81,6 +81,16 @@ verification in production; configuration alone is not evidence of coverage.
   demonstrate rejected direct pushes and failing PRs without disrupting the live
   default branches. Close only after all VPS repositories have been verified.
   No repository protection settings were changed during the network cutover.
+  Completed separately on 2026-11-13. Im Listening's missing policy was applied;
+  the other five policies and all production environment restrictions were
+  preserved. All six passed failing-check, unreviewed-push, force-push and
+  deletion rejection probes on disposable refs, plus positive merge controls;
+  the temporary refs were removed. Six reviewed PRs and their required CI and
+  real protected releases passed. Independent image/revision checks matched
+  the reviewed merges; all ten services were 1/1 and all five health URLs
+  returned 200. BulkBets' existing Go security-gate failure was fixed with Go
+  1.27.4 without weakening a check. See the
+  [policy, probe, CI and deployment evidence](vps-branch-protection-20261113.md).
 
 - [ ] **Restore Fleet road snapping after the routing-provider quota failure.**
   The accepted network-isolation exception remains: OpenRouteService returns
