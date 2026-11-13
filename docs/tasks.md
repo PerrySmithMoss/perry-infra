@@ -42,18 +42,43 @@ verification in production; configuration alone is not evidence of coverage.
   and the [cutover runbook](../deploy/isolation/README.md) for the original drill.
   Fleet's provider-quota 403 and degraded road snapping remain the accepted
   external exception; live updates, reconnect and vehicle search passed.
-  **Remaining before closure:** the owner must explicitly end the network
-  rollback window, then an administrator must recheck and retire only the empty,
-  unreferenced `portfolio_network` and `redis_clients` overlays. Retain all
-  rollback archives, images, configs, secrets, volumes and application data.
+  On 2026-11-13 the owner authorized completing the remaining cleanup, ending
+  the network rollback window. At 10:07 UTC both old overlays had zero endpoints;
+  no service specification or running task on the single-node Swarm referenced
+  either ID. **Remaining before closure:** an administrator must retire only
+  these empty, unreferenced overlays and rerun verification. The exact sudo
+  command has been provided; password authentication remains with the owner.
+  Retain all rollback archives, images, configs, secrets, volumes and app data.
 
-- [ ] **Protect Im Listening's default branch.**
-  Follow-up selected by the owner on 2026-11-13 during the isolation audit.
-  `VPS Production` restricts deployment to `master` and uses the restricted
-  image-only SSH broker, but `master` has no branch protection or repository
-  ruleset. Apply the documented PR and passing-`verify` baseline, enforce it
-  for administrators, and block force-pushes/deletion when this follow-up is
-  authorized. No repository policy was changed during the network cutover.
+- [ ] **Implement consistent branch protection across all VPS GitHub repositories.**
+  Requested by the owner on 2026-11-13, expanding the Im Listening follow-up.
+  Audit effective branch protection and repository/organization rulesets for
+  `perry-infra` (`main`), `BulkBets` (`master`), `chinwag` (`master`),
+  `logistics-realtime-dashboard` (`main`), `im-listening` (`master`) and
+  `VitaTrack` (`master`), all under `PerrySmithMoss`. Reconcile this inventory
+  with the live VPS services and deployment workflows before applying changes.
+  Require pull requests and the appropriate passing checks for each repository,
+  enforce the rules for administrators, and block force-pushes and deletion.
+  Preserve stronger existing rules and document any necessary, narrowly scoped
+  bypass. Verify the exact check names on current PR runs before requiring them;
+  Im Listening's documented baseline includes `verify`. Its production
+  environment restricts deployments to `master` and its broker is image-only,
+  but its default branch currently has no protection or ruleset.
+  Keep production environments restricted to the intended release branch and
+  retain the administrator-installed snapshot and restricted release brokers.
+  Record the effective policy and enforcement evidence for every repository,
+  including a green PR merge and its normal protected production release;
+  demonstrate rejected unreviewed/failing changes without disrupting the live
+  default branches. Close only after all VPS repositories have been verified.
+  No repository protection settings were changed during the network cutover.
+
+- [ ] **Restore Fleet road snapping after the routing-provider quota failure.**
+  The accepted network-isolation exception remains: OpenRouteService returns
+  HTTP 403 with a quota error, including the app-configured probe on 2026-11-13.
+  Review the provider usage/reset and application request volume, restore
+  successful snapping, then verify the route UI with live vehicles and stream
+  reconnect. Record the provider response and functional result; live SSE and
+  vehicle search alone do not prove road snapping works.
 
 - [x] **Add a public health endpoint for Chinwag and external monitoring.**
   Completed on 2026-11-11 in [Chinwag PR #7](https://github.com/PerrySmithMoss/chinwag/pull/7).
@@ -173,14 +198,25 @@ verification in production; configuration alone is not evidence of coverage.
   The agent passed local Cloud-only checks and was claimed/online; the Cloud
   dashboard showed all nine containers. The temporary claim-token file was removed.
 
-- [ ] **Confirm UptimeRobot email delivery.**
-  A test notification was requested for Fleet API, but mailbox receipt has not
-  been confirmed. Confirm receipt or resend a test after checking the owner alert
-  contact and spam folder. Record the result before considering external-monitor
-  notification delivery verified; Netdata emails do not prove this separate path.
+- [x] **Confirm UptimeRobot email delivery.**
+  Verified on 2026-11-12 in the owner's mailbox, including an all-mail search
+  covering spam and trash. UptimeRobot's `alert@uptimerobot.com` delivered
+  "Monitor is DOWN: Im Listening API" at 11:48 and "Monitor is UP: Im Listening
+  API" at 11:58 GMT for [monitor 804640113](https://dashboard.uptimerobot.com/monitors/804640113).
+  Both messages were in the inbox. They identify the same HTTP 404 incident,
+  starting at 11:48:17 and resolving at 11:58:27 (10 minutes 10 seconds).
+  This confirms actual external-monitor outage/recovery delivery independently
+  of Netdata. Existing Im Listening test down/up emails from 2026-11-11 at 20:45
+  were also found in trash; the earlier Fleet test does not need to be resent.
 
-- [ ] **Recheck personal email settings on the Community plan after the trial.**
-  Confirm Critical, Warning, Clear, Reachable, and Unreachable email selections
-  remain enabled after the Business trial ends, or after explicitly switching to
-  Community. Keep the tested Netdata outage/recovery result above; this is a
-  separate check of post-trial feature availability.
+- [x] **Recheck personal email settings on the Community plan after the trial.**
+  Verified on 2026-11-12 after the owner authorized ending the Business trial
+  early and switching immediately to Community. Plan & Billing confirmed
+  Community was Active and Free forever. Space Settings -> Alerts &
+  Notifications retained the enabled personal Email method. User Settings ->
+  Notifications retained E-mail enabled and membership of the All nodes Room
+  in Perrysmithmoss space, with Critical, Warning, Clear, Reachable and
+  Unreachable all selected. No notification selections needed changing.
+  The 2026-11-11 outage/recovery delivery test above remains the delivery
+  evidence; this check verifies feature availability and retained settings on
+  Community, without inducing another outage.
