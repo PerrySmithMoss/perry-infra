@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -37,9 +38,12 @@ func TestOfficialRuntime(t *testing.T) {
 		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		out, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
+		cmd := exec.CommandContext(ctx, "docker", args...)
+		var diagnostics bytes.Buffer
+		cmd.Stderr = &diagnostics
+		out, err := cmd.Output()
 		if err != nil {
-			t.Fatalf("docker %s: %v\n%s", args[0], err, out)
+			t.Fatalf("docker %s: %v\n%s\n%s", args[0], err, out, diagnostics.String())
 		}
 		return strings.TrimSpace(string(out))
 	}
