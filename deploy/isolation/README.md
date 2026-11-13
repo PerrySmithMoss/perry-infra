@@ -754,22 +754,25 @@ configuration or notification settings were changed. The combined checks passed
 with the previously accepted Fleet provider-quota exception explicitly retained.
 The owner subsequently entered `pass accept` and the runner completed final
 verification, recorded the reviewed image-release policies, cleared maintenance
-and reported successful completion. Protected CI release/rollback checks are
-now in progress; old overlays and both audit sets remain retained. No task
-checkbox is closed.
+and reported successful completion. Protected CI release/rollback checks
+subsequently passed on 2026-11-12/13, including all twelve application workflow
+runs and matching/stale infrastructure fingerprint checks. See the linked
+production record for the exact runs, digests and post-merge deployments.
+Both old overlays were confirmed absent on 2026-11-13; both audit sets remain
+retained. The standalone post-retirement verifier is the last closure check.
 
 | App | HTTPS, auth and core flow | Database/migrations and isolation | Redis | Monitoring, restricted release and rollback |
 | --- | --- | --- | --- | --- |
-| Fleet | Final live updates, reconnect, search and protection passed; ORS quota 403 still degrades road snapping (recorded exception) | Final automatic isolation verification passed; independently confirmed ingress-only membership | N/A | Final external Up and Cloud charts/Clear alerts checked; protected release/rollback evidence pending |
-| Chinwag | Final retained session, two controlled logins, two-way message delivery/persistence and automatic Socket.IO reconnect passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | Final external Up and Cloud checks passed; protected release/rollback evidence pending |
-| VitaTrack | Final retained session, activity/nutrition reads and GraphQL protection passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | Final external Up and Cloud checks passed; protected release/rollback evidence pending |
-| Im Listening | Final retained session, password/rejection/logout, returning Google sign-in, Spotify search and protection passed | Final automatic DB/migration/denial checks passed; independently confirmed three-overlay membership | Final private verification, session reloads, logout/replay and HTTP 429/Retry-After/recovery passed | Final external Up and Cloud charts/Clear alerts checked; protected release/rollback evidence pending |
+| Fleet | Final live updates, reconnect, search and protection passed; ORS quota 403 still degrades road snapping (recorded exception) | Final automatic isolation verification passed; independently confirmed ingress-only membership | N/A | External Up and Cloud charts/Clear alerts checked; protected image release, rollback and restore passed |
+| Chinwag | Final retained session, two controlled logins, two-way message delivery/persistence and automatic Socket.IO reconnect passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | External Up and Cloud checks passed; protected image release, rollback and restore passed |
+| VitaTrack | Final retained session, activity/nutrition reads and GraphQL protection passed | Final automatic DB/migration/denial checks passed; independently confirmed ingress/database membership | N/A | External Up and Cloud checks passed; protected image release, rollback and restore passed |
+| Im Listening | Final retained session, password/rejection/logout, returning Google sign-in, Spotify search and protection passed | Final automatic DB/migration/denial checks passed; independently confirmed three-overlay membership | Final private verification, session reloads, logout/replay and HTTP 429/Retry-After/recovery passed | External Up and Cloud charts/Clear alerts checked; protected image release, rollback and restore passed |
 
-Also record exact overlay membership/encryption/non-attachability, no published
-PostgreSQL/Redis ports or host listeners, all public monitor statuses, repeated
-numeric Netdata samples and alert recovery, current/rollback image digests and
-workflow runs, installed snapshot fingerprint, downtime and rollback-drill
-results. Only then close the task checkbox.
+The production record also contains overlay membership/encryption/non-attachability,
+unpublished PostgreSQL/Redis ports and external port denials, public monitor
+statuses, Netdata samples and alert recovery, current/rollback image digests and
+workflow runs, the installed fingerprint, and rollback-drill results. The task
+checkbox remains open until the standalone post-retirement verifier passes.
 
 Design references: [Docker Swarm networking](https://docs.docker.com/engine/swarm/networking/),
 [Traefik Swarm network selection](https://doc.traefik.io/traefik/v3.4/providers/swarm/),
