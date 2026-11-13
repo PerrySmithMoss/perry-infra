@@ -18,8 +18,9 @@ release/rollback and infrastructure fingerprint checks passed; see the
 [production verification record](../../docs/network-isolation-production-20261112.md)
 for workflow links and image coordinates. The owner ended the network rollback
 window on 2026-11-13 and both old overlays are confirmed absent. The standalone
-post-retirement verifier remains the last closure check. Retained audit inputs
-are historical recovery evidence; automatic full specification rollback is no
+post-retirement verifier passed for all four apps, completing task closure.
+Retained audit inputs are historical recovery evidence; automatic full
+specification rollback is no
 longer available because the old network IDs have been deleted. Protected image
 rollback on the accepted topology remains available.
 
@@ -759,7 +760,9 @@ subsequently passed on 2026-11-12/13, including all twelve application workflow
 runs and matching/stale infrastructure fingerprint checks. See the linked
 production record for the exact runs, digests and post-merge deployments.
 Both old overlays were confirmed absent on 2026-11-13; both audit sets remain
-retained. The standalone post-retirement verifier is the last closure check.
+retained. The normal protected infrastructure deployment after retirement and
+the standalone administrator verifier both passed. The isolation task is closed;
+branch protection and Fleet's accepted provider-quota issue remain separate tasks.
 
 | App | HTTPS, auth and core flow | Database/migrations and isolation | Redis | Monitoring, restricted release and rollback |
 | --- | --- | --- | --- | --- |
@@ -771,8 +774,9 @@ retained. The standalone post-retirement verifier is the last closure check.
 The production record also contains overlay membership/encryption/non-attachability,
 unpublished PostgreSQL/Redis ports and external port denials, public monitor
 statuses, Netdata samples and alert recovery, current/rollback image digests and
-workflow runs, the installed fingerprint, and rollback-drill results. The task
-checkbox remains open until the standalone post-retirement verifier passes.
+workflow runs, the installed fingerprint, rollback-drill results, and the passing
+post-retirement verifier. The isolation task checkbox is closed with this
+production evidence recorded.
 
 Design references: [Docker Swarm networking](https://docs.docker.com/engine/swarm/networking/),
 [Traefik Swarm network selection](https://doc.traefik.io/traefik/v3.4/providers/swarm/),
