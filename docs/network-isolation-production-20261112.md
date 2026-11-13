@@ -141,6 +141,8 @@ images, configs, secrets, volumes and all application data.
 
 Fleet's OpenRouteService quota response (HTTP 403) continues to degrade road
 snapping. Live updates, reconnect and vehicle search passed. The owner accepted
+The app-configured provider probe repeated on 2026-11-13 also returned 403 with
+a quota error for one fixed public London coordinate.
 the network cutover with this exception explicitly recorded; it is not claimed
 as a successful road-snapping check.
 
