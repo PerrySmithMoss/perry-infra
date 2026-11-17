@@ -1,6 +1,6 @@
 [Unit]
 Description=Filtered read-only Docker API for Netdata
-Requires=perry-netdata-docker-api.socket docker.service
+Requires=perry-netdata-docker-api.socket
 After=docker.service
 
 [Service]
