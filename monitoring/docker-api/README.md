@@ -39,7 +39,10 @@ masks the raw socket and refuses startup if the account regains Docker-group
 membership, including after a vendor package update. Removing an account from a
 group does not revoke existing processes' credentials: installation restarts
 Netdata **and all three private socket relays**, then checks every Netdata-user
-process for retained Docker access.
+process for retained Docker access. Since the root-started agent uses
+`Type=simple`, verification waits up to 30 seconds for its actual service
+MainPID and the three relay MainPIDs to run as Netdata; extra plugins cannot
+stand in for a missing relay.
 
 Docker-based service discovery is disabled. It currently creates a redundant
 failing PostgreSQL job using stock connection settings and would require extra

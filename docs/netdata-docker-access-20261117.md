@@ -24,6 +24,20 @@ proxy restrictions. The migration and rollback procedures are in the
 
 ## Acceptance
 
+The first administrator attempt at approximately **14:29 UTC** reached the
+filtered API from a group-free Netdata process and removed the membership. Its
+immediate process-count assertion ran before all monitoring processes had
+finished starting. The migration automatically restored the original membership,
+configuration and infrastructure fingerprint, restarted monitoring and passed
+both private-collector and Docker-collector rollback verification. Evidence is
+retained privately at
+`/var/backups/perry-maintenance/docker-api.2213389064`.
+
+The verifier now waits for the actual Netdata and three relay service MainPIDs
+to finish starting as the Netdata user, while checking all Netdata processes
+for both primary and supplementary Docker-group credentials. Production
+acceptance still requires the corrected migration and complete rollback drill.
+
 - [x] Implement a separate Unix-only, allowlisted and response-filtering broker.
 - [x] Test actual unprivileged Netdata Docker health/state collection and cgroup names, plus API/metadata denials, using disposable local containers.
 - [ ] Pass the protected PR scan and install the reviewed host/snapshot configuration through the administrator path.

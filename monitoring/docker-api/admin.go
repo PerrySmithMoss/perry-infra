@@ -249,54 +249,105 @@ func verifyProcessGroups(o operator) error {
 	if err != nil {
 		return err
 	}
-	entries, err := os.ReadDir("/proc")
-	if err != nil {
-		return err
-	}
-	seen := 0
-	for _, entry := range entries {
-		if _, err := strconv.Atoi(entry.Name()); err != nil {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join("/proc", entry.Name(), "status"))
-		if errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ESRCH) {
-			continue
-		}
+	// Type=simple reports the root-started agent active before it drops UID.
+	// Wait for the actual four service MainPIDs, rather than counting plugins
+	// which may appear before a missing relay or while the daemon is starting.
+	ctx, cancel := context.WithTimeout(o.ctx, 30*time.Second)
+	defer cancel()
+	o.ctx = ctx
+	units := append([]string{"netdata.service"}, relayUnits...)
+	for {
+		args := append([]string{"show", "--property=Id,MainPID,ActiveState"}, units...)
+		out, err := o.command("systemctl", args...)
 		if err != nil {
 			return err
 		}
-		ours := false
-		var groups []string
-		for _, line := range strings.Split(string(data), "\n") {
+		pids := map[string]string{}
+		for _, block := range strings.Split(strings.TrimSpace(string(out)), "\n\n") {
+			values := map[string]string{}
+			for _, line := range strings.Split(block, "\n") {
+				key, value, _ := strings.Cut(line, "=")
+				values[key] = value
+			}
+			if values["ActiveState"] == "active" {
+				pids[values["Id"]] = values["MainPID"]
+			}
+		}
+		entries, err := os.ReadDir("/proc")
+		if err != nil {
+			return err
+		}
+		statuses := map[string]string{}
+		for _, entry := range entries {
+			if _, err := strconv.Atoi(entry.Name()); err != nil {
+				continue
+			}
+			data, err := os.ReadFile(filepath.Join("/proc", entry.Name(), "status"))
+			if errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ESRCH) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			statuses[entry.Name()] = string(data)
+		}
+		ready, err := processGroupsReady(statuses, pids, units, account.Uid, group.Gid)
+		if err != nil {
+			return err
+		}
+		if ready {
+			fmt.Println("PASS: Netdata and all three relay MainPIDs are ready; all current netdata processes lack Docker-group credentials.")
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return errors.New("Netdata and all three relay MainPIDs did not finish starting as the Netdata user")
+		case <-time.After(250 * time.Millisecond):
+		}
+	}
+}
+
+func processGroupsReady(statuses, pids map[string]string, units []string, uid, dockerGID string) (bool, error) {
+	identities := map[string][]string{}
+	for pid, data := range statuses {
+		var uids, gids []string
+		for _, line := range strings.Split(data, "\n") {
 			fields := strings.Fields(line)
 			if len(fields) == 0 {
 				continue
 			}
-			if fields[0] == "Uid:" {
-				for _, id := range fields[1:] {
-					if id == account.Uid {
-						ours = true
-					}
-				}
+			switch fields[0] {
+			case "Uid:":
+				uids = fields[1:]
+			case "Gid:", "Groups:":
+				gids = append(gids, fields[1:]...)
 			}
-			if fields[0] == "Groups:" {
-				groups = fields[1:]
-			}
+		}
+		identities[pid] = uids
+		ours := false
+		for _, id := range uids {
+			ours = ours || id == uid
 		}
 		if ours {
-			seen++
-			for _, id := range groups {
-				if id == group.Gid {
-					return errors.New("a netdata process retains the Docker group; restart it through its owner service")
+			for _, id := range gids {
+				if id == dockerGID {
+					return false, errors.New("a netdata process retains Docker-group credentials; restart it through its owner service")
 				}
 			}
 		}
 	}
-	if seen < 4 {
-		return errors.New("expected Netdata and the three private relay processes")
+	for _, unit := range units {
+		uids := identities[pids[unit]]
+		if len(uids) != 4 {
+			return false, nil
+		}
+		for _, id := range uids {
+			if id != uid {
+				return false, nil
+			}
+		}
 	}
-	fmt.Println("PASS: all current netdata processes lack the Docker group.")
-	return nil
+	return true, nil
 }
 
 func serviceHashes(o operator) (map[string]string, error) {
