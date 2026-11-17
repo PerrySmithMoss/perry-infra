@@ -326,3 +326,131 @@ use that membership to bypass host privileges. Review it against the intended
 monitoring access boundary separately, accounting for the existing Docker health
 collector before changing memberships. This is not evidence of new access granted
 by this change.
+
+## Fixed-kernel test boot on 17 November
+
+The owner authorized the fixed-kernel maintenance and its planned application
+outage. The 17 November advisory check found Debian's merged ext4 regression
+reports, including [1154119](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1154119)
+and [1154140](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1154140), marked
+fixed in `linux/6.1.192-2`. Debian's
+[security-package changelog](https://tracker.debian.org/news/1824723/accepted-linux-61192-2-source-into-oldstable-security/)
+identifies the NULL-folio fix. The latest follow-up on
+[1154101](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1154101) reports that
+the final 6.1.192-2 package passed its reproducer. A focused search found no
+reported follow-up regression in that version as of this check; that is bounded
+advisory evidence, not a guarantee against other kernel defects.
+
+Preflight confirmed the installed `linux-image-6.1.0-56-cloud-amd64` package was
+`6.1.192-2`, the faulty 55 package was removed, and both 54 and 56 retained their
+kernel and initramfs files. The running 54 boot ID was
+`8abd373c-2531-4c82-83f4-1d3871a3676d`. The generated GRUB configuration explicitly
+selected 54, supported `next_entry`, and initially had an empty environment.
+The provider's `/etc/default/grub.d/15_timeout.cfg` overrides the main file's
+five-second setting with an effective zero-second menu timeout. Recovery planning
+therefore did not rely on catching the GRUB menu: the one-time selection clears
+before loading 56, leaving 54 as the next ordinary boot until promotion.
+
+A fresh signed-in IONOS session identified My VPS at `194.164.126.180`, with no
+assigned IPv6 address. Its rescue DVD was ejected, the official Grml image
+remained available, and a newly opened remote console connected and responded
+at `my-vps login:`. No old console URL/token or initial password was reused.
+The console remained available throughout the test boot. All administrator
+commands ran in the owner's terminal after sudo authentication.
+
+The installed runtime fingerprint and the retained staged checkout both matched
+`3f9df3a1754cc9e855595fd1e66ad95e6c50860a5b372c4c21eefab524317bf2`.
+The staged collector Go sources, monitoring verifier/configuration checker and
+endpoint inventory matched the reviewed checkout. A fresh static Linux verifier
+was built from the merged source using Go 1.27.3, with SHA-256
+`6d079a7278cd38fcabf37317528a55f9f2573fef29313a7319faca361d1c70d3`.
+Temporary reviewed commands and diagnostics are outside the checkout at
+`/var/tmp/perry-kernel-maintenance-20261117`. The prior monitoring snapshot and
+Chinwag alert were not reinstalled or retuned.
+
+The administrator preflight held the infrastructure release lock and passed the
+complete private-metrics verifier: PostgreSQL TLS and role boundaries, Redis ACL
+denials, private overlays/listeners, all public checks, request/latency coverage,
+and repeated numeric samples from the postgres, redis, traefik and prometheus
+collectors. Docker, SSH, Netdata and sockets 15432/16379/18082 were enabled and
+active. All ten services were 1/1, no systemd units had failed, no tasks were in
+uninterruptible sleep, the kernel was untainted, dpkg audit was empty, package
+locks were unused and both apt maintenance services were inactive. The existing
+`unattended-upgrade-shutdown --wait-for-signal` process was an idle shutdown
+helper, not a package operation.
+
+At **12:28:01 UTC**, the owner-run command backed up boot configuration privately
+under `/var/backups/perry-maintenance/kernel-20261117.Xf5Bl1kt`, set only GRUB's
+one-time entry to 56 and scheduled shutdown for **12:29:01 UTC**. The persistent
+default remained 54. The shutdown broadcast and SSH disconnect occurred at the
+scheduled time; the console showed the new boot progressing. SSH returned by
+**12:29:42 UTC** with kernel **6.1.0-56-cloud-amd64** and new boot ID
+**`08f78547-64c2-4c8a-bc3d-7fae8e9e0fc6`**. GRUB's `next_entry` was then empty
+(`next_entry=`), confirming consumption of the one-time selection.
+
+Public BulkBets probes failed from the first observed check at 12:29:09 through
+12:29:55, then returned 200 at **12:30:03 UTC** and on subsequent probes.
+These samples establish roughly one minute of planned recovery interruption,
+not its exact onset. At **12:30:17 UTC**, all five inventory checks passed:
+BulkBets GET returned 200 with `A-OK!`, and the other four HEAD checks returned
+200. External TCP checks found 80/443 reachable and all eight private ports
+5432, 6379, 8080, 8082, 15432, 16379, 18082 and 19999 unreachable. At 12:30:30 all
+ten services were 1/1; all containers with health probes were healthy, with zero
+automatic restarts and no OOM kills. Traefik restored its published ports
+automatically; no service force-update or specification change was required.
+
+PostgreSQL reached readiness at **12:29:40.236921757 UTC**. At 12:31:51 its current
+container had zero missing-role errors, FATAL/PANIC entries, ERROR entries or
+statement timeouts. Chinwag, VitaTrack and Im Listening connected through their
+deployed `pg` drivers, set default transactions read-only, and successfully read
+application migration metadata. The root filesystem was ext4 mounted read/write,
+with 57 GiB available. At **12:32:56 UTC**, a temporary 4,400,000-byte file on
+`/var/tmp` passed write, fsync, rename, SHA-256 readback and unlink checks. No
+existing data was modified by these probes.
+
+Netdata restarted at **12:29:17 UTC**, active/running with exit status zero.
+Both reboot-required files disappeared normally. Cloud reconnected and its
+pending-package-reboot warning cleared without acknowledgement or silencing;
+at 12:32 its only raised warning was the expected recent-reboot alert.
+
+The owner ran the protected post-boot verifier starting at **12:31:37 UTC**.
+Its current-boot kernel log contained no BUG/Oops/panic, ext4 error/warning,
+aborted journal, read-only remount, blocked-task, I/O-error or watchdog-lockup
+patterns. The private full log is
+`/var/backups/perry-maintenance/kernel-journal-20261117.bDb45KPF`. The kernel was
+untainted, no units had failed and no tasks were in uninterruptible sleep. The
+complete private-metrics verifier passed again, including actual web mode `none`
+and no 19999 listener, claimed/online Cloud connectivity, all three loopback
+sockets, trusted PostgreSQL TLS and restricted monitoring role, Redis ACL denials,
+all four collectors with repeated numeric samples and all five public services'
+request/latency series. The installed snapshot fingerprint was unchanged.
+
+The temporary Go SQLite diagnostic used the host's existing SQLite library in
+read-only mode. Its disposable fixture hash was unchanged before/after the test.
+The real agent metadata recorded `system_post_update_reboot_status` **Clear at
+12:29:29 UTC**, value zero, still using the stock `reboot.conf` rule. Chinwag's
+rollback alert was **Clear at 12:30:04 UTC**, value zero, using the same
+`C78866D0669D413B982C1468435C1B40` custom configuration hash, `database=chinwag`
+selector, 10%/5% hysteresis and 300-second up/down delays. All five other database
+rollback alerts recorded Clear at the same time using the stock 2%/0% rule.
+These transitions followed this boot's Netdata restart and establish fresh
+agent evaluation. Cloud's earlier match-count discrepancy was not used to
+change the working rule.
+
+Cloud displayed fresh PostgreSQL connections data at **12:37:08 UTC**, Redis
+connections/ping data at **12:38:08 UTC**, Prometheus service request/latency
+series at **12:38:56 UTC**, and native Traefik requests/latency at **12:39:52 UTC**,
+all on the same live node. Its Raised view reported **no active alerts**, last
+updated **12:40:28 UTC**: the recent-reboot warning also cleared naturally.
+All five external endpoint and eight private-port checks passed again at
+12:39:43, with no failed units, stuck tasks or kernel taint at the accompanying
+host check.
+
+At **12:44:33 UTC**, uptime was **923.64 seconds**, exceeding the planned
+15-minute observation period. All ten services were still 1/1; all containers
+with probes were healthy, with zero automatic restarts and no OOM kills. The
+external inventory/keyword and private-port checks passed again at 12:44:29.
+There were no failed units, uninterruptible tasks, kernel taint or pending-reboot
+marker. No new application or collector failure required intervention during
+observation. The fixed-kernel boot is accepted; persistent-default promotion
+remains pending at this point in the record.
