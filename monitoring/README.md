@@ -192,6 +192,11 @@ collectors have been installed or verified in production; see [tasks](../docs/ta
   restricted for Traefik. Netdata uses host cgroups for container resources; any
   extra Docker API access needed for names/health must be evaluated separately.
   Do not add netdata to the Docker group as a quick fix (root-equivalent access).
+  The [separate restricted native Docker reader](docker-api/README.md) provides
+  filtered health/state and container-name access without widening Traefik's ACL.
+  Its administrator migration removes existing membership and verifies all
+  affected processes; see its production acceptance record before assuming it is
+  installed.
 
 ## Maintenance and rollback
 

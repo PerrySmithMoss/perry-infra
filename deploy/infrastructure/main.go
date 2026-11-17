@@ -34,6 +34,12 @@ var (
 		"monitoring/collectors/health.conf", "monitoring/collectors/perry-metrics@.socket",
 		"monitoring/collectors/perry-metrics@.service", "monitoring/collectors/tmpfiles.conf",
 		"postgres/tls/ca.crt",
+		"monitoring/docker-api/go.mod", "monitoring/docker-api/main.go",
+		"monitoring/docker-api/proxy.go", "monitoring/docker-api/admin.go",
+		"monitoring/docker-api/perry-netdata-docker-api.socket",
+		"monitoring/docker-api/perry-netdata-docker-api.service",
+		"monitoring/docker-api/docker.conf", "monitoring/docker-api/docker-sd.conf",
+		"monitoring/docker-api/netdata-docker.conf",
 	}
 )
 

@@ -488,3 +488,6 @@ zero-second menu timeout remains in effect; use its official rescue DVD if menu
 selection is unavailable. Review the dated private boot copies before restoring
 any file over later administrator changes. The separate monitoring configuration
 archive and Netdata Docker-group follow-up are unchanged by this kernel work.
+
+The subsequently authorized Docker-group hardening was completed separately;
+see the [17 November Docker access record](netdata-docker-access-20261117.md).

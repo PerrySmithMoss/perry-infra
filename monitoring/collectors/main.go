@@ -609,6 +609,8 @@ func run(args []string) error {
 		return install(root, broker)
 	case len(args) == 2 && args[0] == "verify":
 		return verify(args[1])
+	case len(args) == 1 && args[0] == "verify-docker":
+		return verifyPlugin("docker", []string{"docker.containers_state", "docker.container_state", "docker.container_health_status"})
 	case len(args) == 2 && args[0] == "diagnose":
 		root, err := filepath.Abs(args[1])
 		if err != nil {

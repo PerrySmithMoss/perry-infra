@@ -1,0 +1,12 @@
+[Unit]
+Description=Restricted Netdata Docker API socket
+
+[Socket]
+ListenStream=/run/perry-netdata-docker-api.sock
+SocketUser=root
+SocketGroup=netdata
+SocketMode=0660
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
