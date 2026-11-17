@@ -405,45 +405,55 @@ func restoreLocked(o operator, r record) error {
 	if err := removeMarker(r); err != nil {
 		return err
 	}
-	// Restore only the original membership, never the entire group databases.
-	if r.HadDocker {
-		if err := o.must("gpasswd", "-a", "netdata", "docker"); err != nil {
-			return err
+	var failures []error
+	check := func(err error) {
+		if err != nil {
+			failures = append(failures, err)
 		}
 	}
-	o.command("systemctl", "stop", "netdata.service")
-	o.command("systemctl", "disable", "--now", "perry-netdata-docker-api.socket")
-	o.command("systemctl", "stop", "perry-netdata-docker-api.service")
+	// Restore only the original membership, never the entire group databases.
+	if r.HadDocker {
+		check(o.must("gpasswd", "-a", "netdata", "docker"))
+	}
+	check(o.must("systemctl", "stop", "netdata.service"))
+	for _, unit := range []string{"perry-netdata-docker-api.socket", "perry-netdata-docker-api.service"} {
+		load, err := o.command("systemctl", "show", unit, "--property=LoadState", "--value")
+		if err != nil {
+			check(err)
+			continue
+		}
+		if strings.TrimSpace(string(load)) == "not-found" {
+			continue
+		}
+		if strings.HasSuffix(unit, ".socket") {
+			check(o.must("systemctl", "disable", "--now", unit))
+		} else {
+			check(o.must("systemctl", "stop", unit))
+		}
+	}
 	for _, path := range r.Absent {
 		if !restorable(path) {
-			return errors.New("unrecognized path in rollback record")
+			check(errors.New("unrecognized path in rollback record"))
+			continue
 		}
 		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
+			check(err)
 		}
 	}
 	// This subtree was required to be absent at first installation; remove only
 	// the snapshot files this migration introduced before restoring the old tree.
-	if err := os.RemoveAll(infraSnapshot + "/monitoring/docker-api"); err != nil {
-		return err
-	}
-	if err := o.must("tar", "-xzpf", filepath.Join(r.Backup, "before.tar.gz"), "-C", "/"); err != nil {
-		return err
-	}
-	if err := o.must("systemctl", "daemon-reload"); err != nil {
-		return err
-	}
-	if err := o.must("systemctl", append([]string{"restart"}, relayUnits...)...); err != nil {
-		return err
-	}
-	if err := o.must("systemctl", "start", "netdata.service"); err != nil {
-		return err
-	}
+	check(os.RemoveAll(infraSnapshot + "/monitoring/docker-api"))
+	check(o.must("tar", "-xzpf", filepath.Join(r.Backup, "before.tar.gz"), "-C", "/"))
+	check(o.must("systemctl", "daemon-reload"))
+	check(o.must("systemctl", append([]string{"restart"}, relayUnits...)...))
+	check(o.must("systemctl", "restart", "netdata.service"))
 	actual, err = o.command("/usr/local/libexec/perry-infra-release", "fingerprint", infraSnapshot)
 	if err != nil || strings.TrimSpace(string(actual)) != r.OldFingerprint {
-		return errors.New("rollback fingerprint mismatch")
+		check(errors.New("rollback fingerprint mismatch"))
 	}
-	return o.must(r.Metrics, "verify", r.Root)
+	check(o.must(r.Metrics, "verify", r.Root))
+	check(o.must(r.Metrics, "verify-docker"))
+	return errors.Join(failures...)
 }
 func restorable(path string) bool {
 	if path == installedBinary || path == installRecord {
