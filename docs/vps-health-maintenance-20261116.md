@@ -5,8 +5,10 @@ Recovery to the retained 6.1.0-54 kernel and application health checks passed.
 The PostgreSQL probe fix and Chinwag alert correction are installed and verified.
 Privileged service/collector checks passed, and the agent recorded a Clear
 evaluation of Chinwag's new rule after its restart. Cloud's rule-match display
-disagrees with that agent-side evidence, as detailed below. A future fixed-kernel
-rollout remains pending.
+disagrees with that agent-side evidence, as detailed below. On 17 November,
+the fixed 6.1.0-56 kernel passed a one-time boot and production verification;
+the administrator then restored the normal boot default and retained 54 as a
+manually installed fallback. The final acceptance evidence is recorded below.
 
 **Do not boot 6.1.0-55 again.** Debian reports a critical ext4 regression in
 6.1.192-1: [bug 1154119](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1154119)
@@ -126,7 +128,7 @@ private and do not restore it over later unrelated infrastructure changes.
 - [x] Install reviewed snapshot and host alert; verify effective agent rule and record the Cloud display discrepancy.
 - [x] Confirm new PostgreSQL task is healthy with no probe role errors.
 - [x] Recover the retained kernel and restore all services and public health endpoints.
-- [ ] Reboot into the updated kernel and verify all applications and collectors.
+- [x] Reboot into the updated kernel and verify all applications and collectors.
 
 The administrator installed snapshot
 `d3f92b6ee086a977f7fa076119e1eb219fdc9b311433e85e575007d339c2f77e`
@@ -452,5 +454,37 @@ with probes were healthy, with zero automatic restarts and no OOM kills. The
 external inventory/keyword and private-port checks passed again at 12:44:29.
 There were no failed units, uninterruptible tasks, kernel taint or pending-reboot
 marker. No new application or collector failure required intervention during
-observation. The fixed-kernel boot is accepted; persistent-default promotion
-remains pending at this point in the record.
+observation. The fixed-kernel boot was accepted before persistent-default
+promotion.
+
+At **12:52:19 UTC**, the owner completed the administrator promotion command.
+It checked the same boot ID, more than 15 minutes of uptime, the current kernel
+log, host/service state, idle package maintenance and unchanged infrastructure
+fingerprint before changing the default. The private rollback copy is
+`/var/backups/perry-maintenance/kernel-default-20261117.p3g2UKYZ`. It marked
+`linux-image-6.1.0-54-cloud-amd64` manually installed, restored `GRUB_DEFAULT=0`,
+regenerated GRUB, passed `grub-script-check`, and verified that normal entry 0
+loads the 56 kernel **and its matching initramfs**. Both 54 boot entries and boot
+files remain available. The command would restore its prior boot files if
+generation or validation failed; that rollback was not needed. The reviewed
+wrappers passed shell syntax checks and ShellCheck, and the entry validator
+accepted the real configuration while rejecting mismatched-kernel and
+mismatched-initramfs fixtures.
+
+Independent SSH verification at **12:52:51 UTC** confirmed `GRUB_DEFAULT=0`, the
+generated 56 default, valid GRUB syntax, empty one-time entry, manually retained
+54, both installed package versions and unchanged snapshot fingerprint. The host
+still ran 56 with boot ID `08f78547-64c2-4c8a-bc3d-7fae8e9e0fc6`; no additional
+reboot was needed. The accompanying public and private-port checks passed.
+The fixed-kernel acceptance checkbox is now closed on actual production
+evidence.
+
+For a later regression, keep fresh provider-console access ready and select the
+retained 54 kernel through the administrator bootloader path. To persist that
+rollback, set the explicit 54 entry recorded above, regenerate GRUB and validate
+it before a scheduled reboot. Allow the same host-wide application outage during
+rollback and repeat application/monitoring acceptance afterward. The provider's
+zero-second menu timeout remains in effect; use its official rescue DVD if menu
+selection is unavailable. Review the dated private boot copies before restoring
+any file over later administrator changes. The separate monitoring configuration
+archive and Netdata Docker-group follow-up are unchanged by this kernel work.
