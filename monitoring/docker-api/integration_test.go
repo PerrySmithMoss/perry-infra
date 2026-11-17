@@ -18,6 +18,7 @@ func TestActualNetdataWithoutDockerSocket(t *testing.T) {
 		t.Skip("set DOCKER_API_INTEGRATION=1 with a local/CI Docker daemon")
 	}
 	image := "netdata/netdata:v2.12.3@sha256:c7eab00e20901eb60595ebae0fbfe88e59464e663924461874719d40de0735d2"
+	cliImage := "docker:29.9.3-cli@sha256:5a7af0dcb0e46c803efe9b45371dd21cb500e5b4453250394ac6f06d49b6e6f1"
 	prefix := "perry-docker-reader-test-" + time.Now().Format("150405.000000000")
 	volume := prefix + "-files"
 	seed, broker, collector := prefix+"-seed", prefix+"-broker", prefix+"-collector"
@@ -94,6 +95,13 @@ func main(){l,e:=net.Listen("unix","/fixtures/proxy.sock");if e!=nil{panic(e)};i
 	name := run("exec", "--user", "netdata", "-e", "DOCKER_HOST=unix:///fixtures/proxy.sock", seed, "/usr/libexec/netdata/plugins.d/cgroup-name", "/sys/fs/cgroup/docker/"+seedID, "docker_"+seedID)
 	if !strings.Contains(name, seed) {
 		t.Fatal("actual cgroup-name helper failed")
+	}
+	// The native host also has Docker's CLI. Exercise the helper's CLI branch,
+	// using that host's CLI version without granting it the raw Docker socket.
+	run("run", "--rm", "--network", "none", "--mount", "type=volume,source="+volume+",target=/fixtures", "--entrypoint", "cp", cliImage, "/usr/local/bin/docker", "/fixtures/docker")
+	name = run("exec", "--user", "netdata", "-e", "PATH=/fixtures:/usr/bin:/bin", "-e", "DOCKER_HOST=unix:///fixtures/proxy.sock", seed, "/usr/libexec/netdata/plugins.d/cgroup-name", "/sys/fs/cgroup/docker/"+seedID, "docker_"+seedID)
+	if !strings.Contains(name, seed) {
+		t.Fatal("actual cgroup-name helper with Docker CLI failed")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 14*time.Second)
 	defer cancel()
