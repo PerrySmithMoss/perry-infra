@@ -59,6 +59,10 @@ install -o root -g root -m 644 postgres/tls/ca.crt "$snapshot/postgres/tls/"
 for file in haproxy.cfg traefik.yaml postgres.conf.tmpl redis.conf.tmpl traefik.conf prometheus.conf health.conf perry-metrics@.socket perry-metrics@.service tmpfiles.conf; do
   install -o root -g root -m 644 "monitoring/collectors/$file" "$snapshot/monitoring/collectors/"
 done
+install -d -o root -g root -m 755 "$snapshot/monitoring/docker-api"
+for file in go.mod main.go proxy.go admin.go perry-netdata-docker-api.socket perry-netdata-docker-api.service docker.conf docker-sd.conf netdata-docker.conf; do
+  install -o root -g root -m 644 "monitoring/docker-api/$file" "$snapshot/monitoring/docker-api/"
+done
 install -o root -g root -m 600 "$staging/deployment.env" "$snapshot/deployment.env"
 install -o root -g root -m 440 "$staging/sudoers" /etc/sudoers.d/perry-infra-release
 visudo -c

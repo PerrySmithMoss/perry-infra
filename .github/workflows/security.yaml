@@ -26,6 +26,10 @@ jobs:
           shellcheck monitoring/*.sh
       - name: Check Docker API restrictions
         run: sh docker-proxy/test.sh
+      - name: Check restricted native Netdata Docker API
+        run: |
+          DOCKER_API_INTEGRATION=1 go -C monitoring/docker-api test -race ./...
+          go -C monitoring/docker-api vet ./...
       - name: Verify shared Redis ACLs and persistence with deployed app clients
         run: |
           go -C redis test -race ./...

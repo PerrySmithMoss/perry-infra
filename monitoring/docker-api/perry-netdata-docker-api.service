@@ -1,0 +1,28 @@
+[Unit]
+Description=Filtered read-only Docker API for Netdata
+Requires=perry-netdata-docker-api.socket docker.service
+After=docker.service
+
+[Service]
+DynamicUser=yes
+User=perry-docker-reader
+SupplementaryGroups=docker
+ExecStart=/usr/local/libexec/perry-netdata-docker-api serve
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+MemoryMax=64M
+TasksMax=32
+UMask=0077
+Restart=on-failure
+RestartSec=3

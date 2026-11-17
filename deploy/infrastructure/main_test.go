@@ -46,7 +46,7 @@ func TestFingerprintIncludesAllRuntimeConfiguration(t *testing.T) {
 	root, files := snapshotFixture(t)
 
 	// SHA256 of the ordered name/NUL/content/NUL format, including collector paths.
-	const want = "156a9950a5427c11f50f351296d89c8db3d5faa56bcaad37ebdccd407c89bda2"
+	const want = "3f9d09a8a8a598ff57823c455f9bddc386a95cd1cc7718f4053a79d45c0d6e0f"
 	if got, err := fingerprint(root); err != nil || got != want {
 		t.Fatalf("fingerprint = %q, %v, want %q", got, err, want)
 	}
