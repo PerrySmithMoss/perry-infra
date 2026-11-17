@@ -195,6 +195,10 @@ collectors have been installed or verified in production; see [tasks](../docs/ta
 
 ## Maintenance and rollback
 
+For the PostgreSQL probe fix, Chinwag rollback-alert tuning and recovery from the
+kernel regression, follow the [16 November maintenance runbook](../docs/vps-health-maintenance-20261116.md).
+It uses the administrator snapshot path and preserves a private configuration rollback.
+
 Run the monitoring tests with Go 1.27.3, matching the deployment brokers:
 
 ```sh
