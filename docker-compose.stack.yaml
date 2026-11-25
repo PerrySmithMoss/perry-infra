@@ -63,7 +63,7 @@ services:
       - letsencrypt:/letsencrypt
 
   docker-socket-proxy:
-    image: haproxy:3.4.7-alpine@sha256:2caaf8b1a1ef67f3f1ea9b721f2821675d3ba4500fb518e23884fecb93e8dbaa
+    image: haproxy:3.4.8-alpine@sha256:8aa6458a9d22a8364a2d2ee9ce93de0cc4a2789e3cf63f0b44adc972863724d7
     user: "0:0"
     read_only: true
     cap_drop: [ALL]
@@ -183,7 +183,7 @@ services:
   # Administrator-created host directory contains only relay sockets. No Docker
   # API, database data, application overlay or published TCP port is available.
   metrics-relay:
-    image: haproxy:3.4.7-alpine@sha256:2caaf8b1a1ef67f3f1ea9b721f2821675d3ba4500fb518e23884fecb93e8dbaa
+    image: haproxy:3.4.8-alpine@sha256:8aa6458a9d22a8364a2d2ee9ce93de0cc4a2789e3cf63f0b44adc972863724d7
     user: "0:0"
     read_only: true
     cap_drop: [ALL]
